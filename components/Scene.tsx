@@ -2,6 +2,7 @@
 import React, { useMemo, Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas, useLoader, useThree, ThreeEvent, useFrame } from '@react-three/fiber';
 import { OrbitControls, Decal, Environment, Center, useTexture, Html, useProgress, Text, Line, useGLTF, RenderTexture, OrthographicCamera } from '@react-three/drei';
+// @ts-ignore
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import * as THREE from 'three';
 import { TSHIRT_GLB_MODELS, TOTEBAG_OBJ_URL } from '../constants';
@@ -81,15 +82,16 @@ const SnapshotHandler = ({
         }
 
         // Force a square aspect ratio for a standard snapshot
-        const originalAspect = camera.aspect;
+        const persCamera = camera as any;
+        const originalAspect = persCamera.aspect;
         const originalWidth = gl.domElement.width;
         const originalHeight = gl.domElement.height;
         const pixelRatio = gl.getPixelRatio();
 
         // Set to 500x500 logical size
-        camera.aspect = 1;
-        camera.updateProjectionMatrix();
-        gl.setSize(EXPORT_SIZE, EXPORT_SIZE, false);
+        persCamera.aspect = 1;
+        persCamera.updateProjectionMatrix();
+        gl.setSize(500, 500, false);
 
         gl.render(scene, camera);
 
@@ -101,8 +103,8 @@ const SnapshotHandler = ({
         }
 
         // Revert to original dimensions
-        camera.aspect = originalAspect;
-        camera.updateProjectionMatrix();
+        persCamera.aspect = originalAspect;
+        persCamera.updateProjectionMatrix();
         gl.setSize(originalWidth / pixelRatio, originalHeight / pixelRatio, false);
         gl.render(scene, camera);
 
@@ -298,7 +300,7 @@ const DecalImage: React.FC<{
         <MeasurementGuides
           width={scaleX}
           height={scaleY}
-          position={[finalX, position.y, guideZ + (side === 'back' ? -0.05 : 0.05)]}
+          position={[finalX, position.y, guideZ + (side === 'back' ? -0.22 : 0.22)]}
           rotation={rotation}
         />
       )}
@@ -482,7 +484,7 @@ const BasicaSubmeshWithTexture: React.FC<{
         roughness={0.9}
         metalness={0.0}
       >
-        <RenderTexture attach="map" width={4096} height={4096}>
+        <RenderTexture attach="map" width={2048} height={2048}>
           <color attach="background" args={[materialColor]} />
           <OrthographicCamera
             makeDefault
@@ -892,7 +894,7 @@ const BasicaMeasurementGuides: React.FC<{
     }
 
     let rot: [number, number, number] = [0, 0, 0];
-    const floatOffset = 0.20; // Safe floating offset to stay outside the 3D model
+    const floatOffset = 0.55; // Expanded floating offset to stay completely outside the 3D model
 
     if (isBack) {
       c.z -= floatOffset;
@@ -1300,7 +1302,7 @@ const ToteBagMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cus
 
   const { geometry, zFront, zBack } = useMemo(() => {
     let foundGeom: THREE.BufferGeometry | null = null;
-    obj.traverse((child) => {
+    obj.traverse((child: any) => {
       if ((child as THREE.Mesh).isMesh && !foundGeom) {
         foundGeom = (child as THREE.Mesh).geometry;
       }
@@ -1308,7 +1310,7 @@ const ToteBagMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cus
 
     if (!foundGeom) return { geometry: null, zFront: 0, zBack: 0 };
 
-    const geo = foundGeom.clone();
+    const geo = (foundGeom as THREE.BufferGeometry).clone();
     geo.computeVertexNormals(); // Ensure smooth normals for wavy surface
     geo.center();
     geo.computeBoundingBox();
@@ -1434,7 +1436,7 @@ const CameraController: React.FC<{
     if (!controls) return;
 
     // High performance FPS counter: updates DOM element directly to avoid React re-renders
-    if (import.meta.env.DEV) {
+    if ((import.meta as any).env?.DEV) {
       frameCount.current++;
       const now = performance.now();
       if (now >= lastFpsTime.current + 1000) {
@@ -1642,7 +1644,7 @@ export const Scene: React.FC<SceneProps> = ({ config, captureRef, activeLayerSid
           />
         </Canvas>
       </div>
-      {import.meta.env.DEV && (
+      {(import.meta as any).env?.DEV && (
         (() => {
           const targetIndex = activeLayerIndex !== undefined ? activeLayerIndex : 0;
           const activeLayer = config.layers[targetIndex];
