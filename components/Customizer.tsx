@@ -223,14 +223,19 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
         img.onload = () => {
           setConfig(prev => {
              const newLayers = [...prev.layers];
+             const isBasica = prev.productType === 'basica';
              const newLayer: DesignLayer = {
                  id: `layer-${Date.now()}`,
                  textureUrl: url,
                  originalUrl: url,
                  side: (slotIndex === 1 ? 'back' : 'front') as TShirtSide,
-                 position: { x: 0, y: 0.0, scale: 0.25 },
+                 position: isBasica 
+                   ? (slotIndex === 1 
+                      ? { x: 0.100, y: -0.100, scale: 1.200 } 
+                      : { x: 0.000, y: -0.100, scale: 1.200 })
+                   : { x: 0, y: 0.0, scale: 1.200 },
                  rotation: 0,
-                 targetMesh: prev.productType === 'basica' ? (slotIndex === 1 ? 'basica_espalda' : 'basica_pecho') : undefined,
+                 targetMesh: isBasica ? (slotIndex === 1 ? 'basica_espalda' : 'basica_pecho') : undefined,
              };
              
              if (newLayers[slotIndex]) {
@@ -1031,16 +1036,44 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
                                    <select
                                        value={activeLayer.targetMesh || 'basica_pecho'}
                                        onChange={(e) => {
-                                           const val = e.target.value as any;
-                                           setConfig(prev => {
-                                               const newLayers = [...prev.layers];
-                                               newLayers[activeLayerIndex] = {
-                                                   ...newLayers[activeLayerIndex],
-                                                   targetMesh: val,
-                                                   side: val === 'basica_espalda' ? 'back' : 'front'
-                                               };
-                                               return { ...prev, layers: newLayers };
-                                           });
+                                            const val = e.target.value as any;
+                                            setConfig(prev => {
+                                                const newLayers = [...prev.layers];
+                                                let newScale = newLayers[activeLayerIndex].position.scale;
+                                                let newX = newLayers[activeLayerIndex].position.x;
+                                                let newY = newLayers[activeLayerIndex].position.y;
+                                                
+                                                if (val === 'basica_mangder') {
+                                                    newScale = 0.340;
+                                                    newX = -0.020;
+                                                    newY = -0.110;
+                                                } else if (val === 'basica_mangiz') {
+                                                    newScale = 0.340;
+                                                    newX = 0.007;
+                                                    newY = -0.448;
+                                                } else if (val === 'basica_pecho') {
+                                                    newScale = 1.200;
+                                                    newX = 0.000;
+                                                    newY = -0.100;
+                                                } else if (val === 'basica_espalda') {
+                                                    newScale = 1.200;
+                                                    newX = 0.100;
+                                                    newY = -0.100;
+                                                }
+
+                                                newLayers[activeLayerIndex] = {
+                                                    ...newLayers[activeLayerIndex],
+                                                    targetMesh: val,
+                                                    side: val === 'basica_espalda' ? 'back' : 'front',
+                                                    position: {
+                                                        ...newLayers[activeLayerIndex].position,
+                                                        scale: newScale,
+                                                        x: newX,
+                                                        y: newY
+                                                    }
+                                                };
+                                                return { ...prev, layers: newLayers };
+                                            });
                                        }}
                                        className="w-full text-[10px] font-bold p-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 focus:outline-none"
                                    >
@@ -1211,29 +1244,74 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
             </div>
             
             {activeLayer && (
-                <div className="mt-2 flex gap-2">
-                     <button
-                        onClick={toggleLayerSide}
-                        title="Cambiar ubicación de este diseño"
-                        className="flex-1 flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-pink-500 dark:hover:border-pink-500 transition-colors group"
-                     >
-                        <div className="flex items-center gap-2">
-                            <Shirt className="w-4 h-4 text-gray-500 group-hover:text-pink-500 transition-colors" />
-                            <span className="text-xs font-bold uppercase text-gray-600 dark:text-gray-300">Ubicación:</span>
+                <div className="mt-2 space-y-2">
+                     {config.productType === 'basica' && (
+                        <div className="space-y-1 animate-fade-in text-left">
+                          <label className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400 flex items-center gap-2 tracking-wide">
+                            <Shirt className="w-3.5 h-3.5 text-pink-500" /> Sección de la Prenda
+                          </label>
+                          <select
+                            value={activeLayer.targetMesh || 'basica_pecho'}
+                            onChange={(e) => {
+                              const val = e.target.value as any;
+                              setConfig(prev => {
+                                const newLayers = [...prev.layers];
+                                let newScale = newLayers[activeLayerIndex].position.scale;
+                                let newX = newLayers[activeLayerIndex].position.x;
+                                let newY = newLayers[activeLayerIndex].position.y;
+                                
+                                if (val === 'basica_mangder') {
+                                  newScale = 0.340;
+                                  newX = -0.020;
+                                  newY = -0.110;
+                                } else if (val === 'basica_mangiz') {
+                                  newScale = 0.340;
+                                  newX = 0.007;
+                                  newY = -0.448;
+                                } else if (val === 'basica_pecho') {
+                                  newScale = 1.200;
+                                  newX = 0.000;
+                                  newY = -0.100;
+                                } else if (val === 'basica_espalda') {
+                                  newScale = 1.200;
+                                  newX = 0.100;
+                                  newY = -0.100;
+                                }
+
+                                newLayers[activeLayerIndex] = {
+                                  ...newLayers[activeLayerIndex],
+                                  targetMesh: val,
+                                  side: val === 'basica_espalda' ? 'back' : 'front',
+                                  position: {
+                                    ...newLayers[activeLayerIndex].position,
+                                    scale: newScale,
+                                    x: newX,
+                                    y: newY
+                                  }
+                                };
+                                return { ...prev, layers: newLayers };
+                              });
+                            }}
+                            className="w-full text-xs font-semibold p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-pink-500 shadow-sm"
+                          >
+                            <option value="basica_pecho">Pecho / Frente</option>
+                            <option value="basica_espalda">Espalda</option>
+                            <option value="basica_mangiz">Manga Izquierda</option>
+                            <option value="basica_mangder">Manga Derecha</option>
+                          </select>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded transition-all ${activeLayer.side === 'front' || !activeLayer.side ? 'bg-pink-500 text-white shadow-sm' : 'text-gray-400'}`}>Frente</span>
-                            <RefreshCw className="w-3 h-3 text-gray-400" />
-                            <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded transition-all ${activeLayer.side === 'back' ? 'bg-pink-500 text-white shadow-sm' : 'text-gray-400'}`}>Espalda</span>
-                        </div>
-                     </button>
-                     <button
-                        onClick={swapLayersData}
-                        title="Intercambiar diseño entre ranura 1 y 2"
-                        className="px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-pink-500 hover:text-pink-600 dark:hover:border-pink-500 transition-colors group flex items-center justify-center shrink-0 shadow-sm"
-                     >
-                        <ArrowLeftRight className="w-4 h-4 text-gray-500 group-hover:text-pink-500 transition-colors" />
-                     </button>
+                     )}
+                     
+                     <div className="flex gap-2">
+                         <button
+                            onClick={swapLayersData}
+                            title="Intercambiar diseño entre ranura 1 y 2"
+                            className="w-full py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-pink-500 hover:text-pink-600 dark:hover:border-pink-500 transition-colors group flex items-center justify-center gap-2 shadow-sm text-xs font-bold text-gray-600 dark:text-gray-300"
+                         >
+                            <ArrowLeftRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-pink-500 transition-colors" />
+                            <span>Intercambiar Ranuras (1 y 2)</span>
+                         </button>
+                     </div>
                 </div>
             )}
             
@@ -1305,32 +1383,6 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
 
             {config.productType === 'basica' && (
               <>
-                <div className="space-y-2 animate-fade-in">
-                  <label className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2 uppercase tracking-wide">
-                    <Shirt className="w-4 h-4" /> Sección de la Prenda
-                  </label>
-                  <select
-                    value={activeLayer.targetMesh || 'basica_pecho'}
-                    onChange={(e) => {
-                      const val = e.target.value as any;
-                      setConfig(prev => {
-                        const newLayers = [...prev.layers];
-                        newLayers[activeLayerIndex] = {
-                          ...newLayers[activeLayerIndex],
-                          targetMesh: val,
-                          side: val === 'basica_espalda' ? 'back' : 'front'
-                        };
-                        return { ...prev, layers: newLayers };
-                      });
-                    }}
-                    className="w-full text-xs lg:text-sm font-semibold p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-pink-500"
-                  >
-                    <option value="basica_pecho">Pecho / Frente</option>
-                    <option value="basica_espalda">Espalda</option>
-                    <option value="basica_mangiz">Manga Izquierda</option>
-                    <option value="basica_mangder">Manga Derecha</option>
-                  </select>
-                </div>
 
                 <div className="space-y-2 animate-fade-in">
                   <div className="flex justify-between items-center">
@@ -1403,26 +1455,6 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
                 </div>
               </>
             )}
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2 uppercase tracking-wide">
-                  <Hand className="w-4 h-4" /> Transparencia
-                </label>
-                <span className="text-[10px] font-bold text-pink-500">{Math.round((config.designOpacity ?? appearance.designOpacity) * 100)}%</span>
-              </div>
-              <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 p-2 rounded-lg">
-                <input 
-                  type="range" 
-                  min="0.1" 
-                  max="1" 
-                  step="0.01" 
-                  value={config.designOpacity ?? appearance.designOpacity}
-                  onChange={(e) => setConfig(prev => ({ ...prev, designOpacity: parseFloat(e.target.value) }))}
-                  className="w-full accent-pink-500 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                />
-              </div>
-            </div>
 
             <div className="pt-2 border-t border-gray-100 dark:border-gray-800 flex gap-2">
                 <button 
