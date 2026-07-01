@@ -467,7 +467,7 @@ const BasicaSubmeshWithTexture: React.FC<{
     return { width, height, depth };
   }, [meshData.geometry]);
 
-  const normalScaleVec = useMemo(() => new THREE.Vector2(0.18, 0.18), []);
+  const normalScaleVec = useMemo(() => new THREE.Vector2(0.65, 0.65), []);
 
   return (
     <Mesh
@@ -530,7 +530,7 @@ const BasicaSubmeshPlain: React.FC<{
 
     mat.color.set(new THREE.Color(materialColor));
     mat.normalMap = normalMap;
-    mat.normalScale.set(0.4, 0.4);
+    mat.normalScale.set(0.65, 0.65);
     mat.roughness = 0.9;
     mat.metalness = 0.0;
     mat.map = null;
@@ -578,6 +578,318 @@ const BasicaSubmesh: React.FC<{
       normalMap={normalMap}
       onPointerMove={onPointerMove}
       onPointerDown={onPointerDown}
+    />
+  );
+};
+
+const OversizeLayerItem: React.FC<{
+  layer: DesignLayer;
+  uvBounds: any;
+  physicalBounds: any;
+  renderer: THREE.WebGLRenderer;
+}> = ({ layer, uvBounds, physicalBounds, renderer }) => {
+  const texture = useTexture(layer.textureUrl);
+
+  useEffect(() => {
+    if (texture) {
+      texture.wrapS = THREE.ClampToEdgeWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.repeat.set(1, 1);
+      texture.offset.set(0, 0);
+      texture.center.set(0.5, 0.5);
+      texture.rotation = 0;
+      texture.minFilter = THREE.LinearMipmapLinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      texture.generateMipmaps = true;
+      texture.needsUpdate = true;
+    }
+  }, [texture, renderer]);
+
+  const ratio = useMemo(() => {
+    if (!texture || !texture.image) return 1;
+    const img = texture.image as HTMLImageElement;
+    return img.width / img.height;
+  }, [texture]);
+
+  const scale = layer.position?.scale || 0.25;
+  let scaleX = scale;
+  let scaleY = scale;
+
+  if (ratio > 1) {
+    scaleY = scale / ratio;
+  } else {
+    scaleX = scale * ratio;
+  }
+
+  const uniformScaleFactor = uvBounds.width / physicalBounds.width;
+  const finalScaleX = scaleX * uniformScaleFactor;
+  const finalScaleY = scaleY * uniformScaleFactor;
+
+  const offsetX = layer.position?.x || 0;
+  const offsetY = layer.position?.y || 0;
+  const rotDeg = layer.rotation || 0;
+  const rotationRad = rotDeg * (Math.PI / 180);
+
+  const planePositionX = (uvBounds.centerX - 0.5) + offsetX * (uvBounds.width / physicalBounds.width);
+  const planePositionY = (uvBounds.centerY - 0.5) + offsetY * (uvBounds.height / physicalBounds.height);
+
+  return (
+    <mesh
+      position={[planePositionX, planePositionY, 0.01]}
+      rotation={[0, 0, rotationRad]}
+      scale={[finalScaleX, finalScaleY, 1]}
+    >
+      <planeGeometry />
+      <meshBasicMaterial
+        map={texture}
+        transparent
+        depthWrite={false}
+      />
+    </mesh>
+  );
+};
+
+const OversizeSubmeshWithTexture: React.FC<{
+  meshData: any;
+  matchingLayers: DesignLayer[];
+  materialColor: string;
+  normalMap: THREE.Texture;
+  onPointerMove: (e: any) => void;
+  onPointerDown?: (e: any) => void;
+}> = ({ meshData, matchingLayers, materialColor, normalMap, onPointerMove, onPointerDown }) => {
+  const renderer = useThree(state => state.gl);
+
+  const uvBounds = useMemo(() => {
+    const uvAttr = meshData.geometry.attributes.uv;
+    if (!uvAttr) {
+      return { minX: 0, maxX: 1, minY: 0, maxY: 1, centerX: 0.5, centerY: 0.5, width: 1.0, height: 1.0 };
+    }
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (let i = 0; i < uvAttr.count; i++) {
+      const u = uvAttr.getX(i);
+      const v = uvAttr.getY(i);
+      if (u < minX) minX = u;
+      if (u > maxX) maxX = u;
+      if (v < minY) minY = v;
+      if (v > maxY) maxY = v;
+    }
+
+    const width = (maxX - minX) || 1.0;
+    const height = (maxY - minY) || 1.0;
+    const centerX = minX + width / 2;
+    const centerY = minY + height / 2;
+
+    return { minX, maxX, minY, maxY, centerX, centerY, width, height };
+  }, [meshData.geometry]);
+
+  const physicalBounds = useMemo(() => {
+    const posAttr = meshData.geometry.attributes.position;
+    if (!posAttr) {
+      return { width: 1.0, height: 1.0, depth: 1.0 };
+    }
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+
+    for (let i = 0; i < posAttr.count; i++) {
+      const x = posAttr.getX(i);
+      const y = posAttr.getY(i);
+      const z = posAttr.getZ(i);
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+      if (z < minZ) minZ = z;
+      if (z > maxZ) maxZ = z;
+    }
+
+    const width = (maxX - minX) || 1.0;
+    const height = (maxY - minY) || 1.0;
+    const depth = (maxZ - minZ) || 1.0;
+
+    return { width, height, depth };
+  }, [meshData.geometry]);
+
+  const normalScaleVec = useMemo(() => new THREE.Vector2(0.95, 0.95), []);
+
+  return (
+    <Mesh
+      geometry={meshData.geometry}
+      castShadow
+      receiveShadow
+      onPointerMove={onPointerMove}
+      onPointerDown={onPointerDown}
+    >
+      <meshStandardMaterial
+        color="#ffffff"
+        normalMap={normalMap}
+        normalScale={normalScaleVec}
+        roughness={0.9}
+        metalness={0.0}
+      >
+        <RenderTexture attach="map" width={2048} height={2048}>
+          <color attach="background" args={[materialColor]} />
+          <ambientLight intensity={1.5} />
+          <directionalLight position={[0, 0, 5]} intensity={1.0} />
+          {matchingLayers.map((layer) => (
+            <OversizeLayerItem
+              key={layer.id}
+              layer={layer}
+              uvBounds={uvBounds}
+              physicalBounds={physicalBounds}
+              renderer={renderer}
+            />
+          ))}
+        </RenderTexture>
+      </meshStandardMaterial>
+    </Mesh>
+  );
+};
+
+const OversizeSubmeshPlain: React.FC<{
+  meshData: any;
+  materialColor: string;
+  normalMap: THREE.Texture | null;
+  onPointerMove: (e: any) => void;
+  onPointerDown?: (e: any) => void;
+}> = ({ meshData, materialColor, normalMap, onPointerMove, onPointerDown }) => {
+  const normalScaleVec = useMemo(() => new THREE.Vector2(0.95, 0.95), []);
+
+  return (
+    <Mesh
+      geometry={meshData.geometry}
+      castShadow
+      receiveShadow
+      onPointerMove={onPointerMove}
+      onPointerDown={onPointerDown}
+    >
+      <meshStandardMaterial
+        color={materialColor}
+        normalMap={normalMap}
+        normalScale={normalScaleVec}
+        roughness={0.9}
+        metalness={0.0}
+      />
+    </Mesh>
+  );
+};
+
+const OversizeSubmesh: React.FC<{
+  meshData: any;
+  matchingLayers: DesignLayer[];
+  materialColor: string;
+  normalMap: THREE.Texture;
+  onPointerMove: (e: any) => void;
+  onPointerDown?: (e: any) => void;
+}> = ({ meshData, matchingLayers, materialColor, normalMap, onPointerMove, onPointerDown }) => {
+  if (matchingLayers && matchingLayers.length > 0) {
+    return (
+      <OversizeSubmeshWithTexture
+        meshData={meshData}
+        matchingLayers={matchingLayers}
+        materialColor={materialColor}
+        normalMap={normalMap}
+        onPointerMove={onPointerMove}
+        onPointerDown={onPointerDown}
+      />
+    );
+  }
+
+  return (
+    <OversizeSubmeshPlain
+      meshData={meshData}
+      materialColor={materialColor}
+      normalMap={normalMap}
+      onPointerMove={onPointerMove}
+      onPointerDown={onPointerDown}
+    />
+  );
+};
+
+const OversizeMeasurementGuides: React.FC<{
+  layer: DesignLayer;
+  meshes: any[];
+}> = ({ layer, meshes }) => {
+  const texture = useTexture(layer.textureUrl);
+  const img = texture ? texture.image as HTMLImageElement : null;
+  const ratio = img ? img.width / img.height : 1;
+
+  let scaleX = layer.position.scale;
+  let scaleY = layer.position.scale;
+
+  if (ratio > 1) {
+    scaleY = layer.position.scale / ratio;
+  } else {
+    scaleX = layer.position.scale * ratio;
+  }
+
+  const targetMesh = layer.targetMesh || 'oversize_pecho';
+  const isBack = targetMesh.toLowerCase().includes('espalda');
+  const isMangIz = targetMesh.toLowerCase().includes('mangiz');
+  const isMangDer = targetMesh.toLowerCase().includes('mangder');
+
+  const { center, rotation } = useMemo(() => {
+    const found = meshes.find(m => m.name.toLowerCase() === targetMesh.toLowerCase());
+    const c = found ? new THREE.Vector3() : new THREE.Vector3(0, 0, 0.2);
+    
+    if (found) {
+      found.geometry.computeBoundingBox();
+      found.geometry.boundingBox?.getCenter(c);
+    }
+    
+    let rot: [number, number, number] = [0, 0, 0];
+    const floatOffset = 0.55;
+
+    if (isBack) {
+      c.z -= floatOffset;
+      rot = [0, Math.PI, 0];
+    } else if (isMangIz) {
+      c.x += floatOffset;
+      rot = [0, Math.PI / 2, 0];
+    } else if (isMangDer) {
+      c.x -= floatOffset;
+      rot = [0, -Math.PI / 2, 0];
+    } else {
+      c.z += floatOffset;
+      rot = [0, 0, 0];
+    }
+    
+    return { center: c, rotation: rot };
+  }, [targetMesh, meshes, isBack, isMangIz, isMangDer]);
+
+  let finalX = center.x;
+  let finalY = center.y + (layer.position.y || 0);
+  let finalZ = center.z;
+
+  if (isMangIz) {
+    finalZ = center.z - (layer.position.x || 0);
+  } else if (isMangDer) {
+    finalZ = center.z + (layer.position.x || 0);
+  } else if (isBack) {
+    finalX = center.x - (layer.position.x || 0);
+  } else {
+    finalX = center.x + (layer.position.x || 0);
+  }
+
+  const finalPos = new THREE.Vector3(finalX, finalY, finalZ);
+
+  return (
+    <MeasurementGuides 
+      width={scaleX}
+      height={scaleY}
+      position={[finalPos.x, finalPos.y, finalPos.z]}
+      rotation={rotation}
     />
   );
 };
@@ -963,6 +1275,7 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
   const dragInfo = useRef<{
     initialPointerX: number;
     initialPointerY: number;
+    initialPointerZ: number;
     initialX: number;
     initialY: number;
   } | null>(null);
@@ -1081,10 +1394,20 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
     const point = e.point;
 
     const info = dragInfo.current;
+    const targetIndex = activeLayerIndex !== undefined ? activeLayerIndex : 0;
+    const activeLayer = config.layers[targetIndex];
+    const activeTargetMesh = (activeLayer?.targetMesh || '').toLowerCase();
+
     let deltaX = point.x - info.initialPointerX;
     let deltaY = point.y - info.initialPointerY;
 
-    if (activeLayerSide === 'back') {
+    if (activeTargetMesh.includes('mangiz')) {
+      // Left sleeve: horizontal movement corresponds to Z coordinate (inverted)
+      deltaX = -((point.z - info.initialPointerZ) || 0);
+    } else if (activeTargetMesh.includes('mangder')) {
+      // Right sleeve: horizontal movement corresponds to Z coordinate
+      deltaX = (point.z - info.initialPointerZ) || 0;
+    } else if (activeTargetMesh.includes('espalda') || activeLayerSide === 'back') {
       deltaX = -deltaX;
     }
 
@@ -1103,6 +1426,7 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
         dragInfo.current = {
           initialPointerX: e.point.x,
           initialPointerY: e.point.y,
+          initialPointerZ: e.point.z,
           initialX: currentLayer.position.x || 0,
           initialY: currentLayer.position.y || 0,
         };
@@ -1114,6 +1438,7 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
 
   let materialColor = config.color === 'white' ? '#ffffff' : (customBlackColor || '#050505');
   const isBasica = config.productType === 'basica';
+  const isOversize = config.productType === 'oversize';
 
   if (isBasica) {
     return (
@@ -1144,6 +1469,45 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
           if (activeLayerSide === 'front' && isLayerBack) return null;
           return (
             <BasicaMeasurementGuides
+              key={layer.id}
+              layer={layer}
+              meshes={meshes}
+            />
+          );
+        })}
+      </group>
+    );
+  }
+
+  if (isOversize) {
+    return (
+      <group>
+        {meshes.map((meshData, i) => {
+          const meshNameLower = (meshData.name || '').toLowerCase();
+          const matchingLayers = config.layers.filter(layer => {
+            const target = (layer.targetMesh || '').toLowerCase();
+            return target === meshNameLower || (target === '' && meshNameLower === 'oversize_pecho' && layer.side !== 'back');
+          });
+
+          return (
+            <OversizeSubmesh
+              key={i}
+              meshData={meshData}
+              matchingLayers={matchingLayers}
+              materialColor={materialColor}
+              normalMap={normalMap}
+              onPointerMove={handlePointerMove}
+              onPointerDown={handlePointerDown}
+            />
+          );
+        })}
+        {showMeasurements && config.layers.map((layer) => {
+          const isLayerBack = layer.side === 'back';
+          // Only show measurements on active screen side
+          if (activeLayerSide === 'back' && !isLayerBack) return null;
+          if (activeLayerSide === 'front' && isLayerBack) return null;
+          return (
+            <OversizeMeasurementGuides
               key={layer.id}
               layer={layer}
               meshes={meshes}
@@ -1548,22 +1912,24 @@ export const Scene: React.FC<SceneProps> = ({ config, captureRef, activeLayerSid
     const zBase = 11.0;
     const targetIndex = activeLayerIndex !== undefined ? activeLayerIndex : 0;
     const activeLayer = config.layers[targetIndex];
-    const activeTargetMesh = activeLayer?.targetMesh || 'basica_pecho';
+    const defaultMesh = config.productType === 'oversize' ? 'oversize_pecho' : 'basica_pecho';
+    const activeTargetMesh = activeLayer?.targetMesh || defaultMesh;
 
     let position: [number, number, number] = [0, 0, zBase];
     let target: [number, number, number] = [0, 0, 0];
 
-    if (config.productType === 'basica') {
-      if (activeTargetMesh === 'basica_espalda') {
+    if (config.productType === 'basica' || config.productType === 'oversize') {
+      const suffix = config.productType === 'oversize' ? 'oversize' : 'basica';
+      if (activeTargetMesh === `${suffix}_espalda`) {
         position = [0, 0, -zBase];
         target = [0, 0, 0];
-      } else if (activeTargetMesh === 'basica_mangiz') {
+      } else if (activeTargetMesh === `${suffix}_mangiz`) {
         position = [zBase * 0.85, 0.2, zBase * 0.2]; // Look slightly from front-left
         target = [0.8, 0.2, 0]; // Focus on left sleeve
-      } else if (activeTargetMesh === 'basica_mangder') {
+      } else if (activeTargetMesh === `${suffix}_mangder`) {
         position = [-zBase * 0.85, 0.2, zBase * 0.2]; // Look slightly from front-right
         target = [-0.8, 0.2, 0]; // Focus on right sleeve
-      } else { // basica_pecho
+      } else { // pecho / front
         position = [0, 0, zBase];
         target = [0, 0, 0];
       }
@@ -1648,18 +2014,32 @@ export const Scene: React.FC<SceneProps> = ({ config, captureRef, activeLayerSid
         (() => {
           const targetIndex = activeLayerIndex !== undefined ? activeLayerIndex : 0;
           const activeLayer = config.layers[targetIndex];
-          if (!activeLayer) return null;
+          const isRenderTexture = config.productType === 'basica' || config.productType === 'oversize';
+          const imageSizeText = activeLayer 
+            ? (activeLayer.imageWidth && activeLayer.imageHeight 
+               ? `${activeLayer.imageWidth}x${activeLayer.imageHeight}` 
+               : '2048x2048') 
+            : '--';
+          
+          const defaultNode = config.productType === 'oversize' ? 'OVERSIZE_PECHO' : (config.productType === 'basica' ? 'BASICA_PECHO' : 'N/A');
+          const nodeName = activeLayer 
+            ? (activeLayer.targetMesh || (config.productType === 'oversize' ? 'oversize_pecho' : 'basica_pecho')).replace('basica_', '').replace('oversize_', '').toUpperCase()
+            : defaultNode.replace('BASICA_', '').replace('OVERSIZE_', '');
+
           return (
-            <div className="absolute bottom-4 left-4 z-30 bg-black/80 backdrop-blur border border-green-500/50 rounded-xl p-3 font-mono text-[10px] text-green-400 pointer-events-none select-none shadow-lg max-w-[220px] text-left">
+            <div className="absolute bottom-4 left-4 z-30 bg-black/80 backdrop-blur border border-green-500/50 rounded-xl p-3 font-mono text-[10px] text-green-400 pointer-events-none select-none shadow-lg min-w-[190px] text-left">
               <div className="text-green-500 font-extrabold border-b border-green-500/20 pb-1 mb-1 flex items-center gap-1.5 uppercase">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                 DEV HUD
               </div>
-              <div>Nodo: <span className="text-white font-bold">{(activeLayer.targetMesh || 'basica_pecho').replace('basica_', '').toUpperCase()}</span></div>
-              <div>Coord X: <span className="text-white">{(activeLayer.position.x || 0).toFixed(3)}</span></div>
-              <div>Coord Y: <span className="text-white">{(activeLayer.position.y || 0).toFixed(3)}</span></div>
-              <div>Escala: <span className="text-white">{(activeLayer.position.scale || 0).toFixed(3)}</span></div>
-              <div>Rendimiento: <span id="dev-fps" className="text-white font-bold">-- FPS</span></div>
+              <div className="space-y-0.5">
+                <div>Nodo Activo: <span className="text-white font-bold">{nodeName}</span></div>
+                <div>Render Texture: <span className="text-white font-bold">{isRenderTexture ? `ACTIVO (2D) - ${imageSizeText}` : 'INACTIVO (3D Decal)'}</span></div>
+                <div>Coord X: <span className="text-white">{activeLayer ? (activeLayer.position.x || 0).toFixed(3) : '--'}</span></div>
+                <div>Coord Y: <span className="text-white">{activeLayer ? (activeLayer.position.y || 0).toFixed(3) : '--'}</span></div>
+                <div>Escala: <span className="text-white">{activeLayer ? (activeLayer.position.scale || 0).toFixed(3) : '--'}</span></div>
+                <div>Rendimiento: <span id="dev-fps" className="text-white font-bold">-- FPS</span></div>
+              </div>
             </div>
           );
         })()

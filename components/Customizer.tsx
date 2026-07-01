@@ -198,9 +198,18 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
       loadSettings();
   }, []);
 
-  // useMemo: solo recalcula cuando cambia el tipo de producto o las constraints cargadas
   const activeConstraints = useMemo(
-    () => config.productType === 'totebag' ? toteConstraints : constraints,
+    () => {
+      if (config.productType === 'totebag') return toteConstraints;
+      if (config.productType === 'oversize') {
+        return {
+          x: { min: -0.40, max: 0.40 },
+          y: { min: -0.60, max: 0.50 },
+          scale: { min: 0.05, max: 0.65 }
+        };
+      }
+      return constraints;
+    },
     [config.productType, toteConstraints, constraints]
   );
 
@@ -223,27 +232,38 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
         img.onload = () => {
           setConfig(prev => {
              const newLayers = [...prev.layers];
-             const isBasica = prev.productType === 'basica';
-             const newLayer: DesignLayer = {
-                 id: `layer-${Date.now()}`,
-                 textureUrl: url,
-                 originalUrl: url,
-                 side: (slotIndex === 1 ? 'back' : 'front') as TShirtSide,
-                 position: isBasica 
-                   ? (slotIndex === 1 
-                      ? { x: 0.100, y: -0.100, scale: 1.200 } 
-                      : { x: 0.000, y: -0.100, scale: 1.200 })
-                   : { x: 0, y: 0.0, scale: 1.200 },
-                 rotation: 0,
-                 targetMesh: isBasica ? (slotIndex === 1 ? 'basica_espalda' : 'basica_pecho') : undefined,
-             };
-             
-             if (newLayers[slotIndex]) {
-                 newLayers[slotIndex] = { ...newLayers[slotIndex], textureUrl: url, originalUrl: url, filters: undefined, chromaKey: undefined, targetMesh: prev.productType === 'basica' ? (newLayers[slotIndex]?.targetMesh || (slotIndex === 1 ? 'basica_espalda' : 'basica_pecho')) : undefined };
-             } else {
-                 if (slotIndex === 1 && !newLayers[0]) return prev; 
-                 newLayers[slotIndex] = newLayer;
-             }
+              const isBasica = prev.productType === 'basica';
+              const isOversize = prev.productType === 'oversize';
+              const is2DProj = isBasica || isOversize;
+              
+              const defaultTargetMesh = is2DProj 
+                ? (slotIndex === 1 
+                   ? (prev.productType === 'oversize' ? 'oversize_espalda' as const : 'basica_espalda' as const) 
+                   : (prev.productType === 'oversize' ? 'oversize_pecho' as const : 'basica_pecho' as const))
+                : undefined;
+
+              const newLayer: DesignLayer = {
+                  id: `layer-${Date.now()}`,
+                  textureUrl: url,
+                  originalUrl: url,
+                  side: (slotIndex === 1 ? 'back' : 'front') as TShirtSide,
+                  position: is2DProj 
+                    ? (slotIndex === 1 
+                       ? { x: 0.100, y: -0.100, scale: 1.200 } 
+                       : { x: 0.000, y: -0.100, scale: 1.200 })
+                    : { x: 0, y: 0.0, scale: 1.200 },
+                  rotation: 0,
+                  targetMesh: defaultTargetMesh,
+                  imageWidth: img.width,
+                  imageHeight: img.height,
+              };
+              
+              if (newLayers[slotIndex]) {
+                  newLayers[slotIndex] = { ...newLayers[slotIndex], textureUrl: url, originalUrl: url, filters: undefined, chromaKey: undefined, targetMesh: is2DProj ? (newLayers[slotIndex]?.targetMesh || defaultTargetMesh) : undefined, imageWidth: img.width, imageHeight: img.height };
+              } else {
+                  if (slotIndex === 1 && !newLayers[0]) return prev; 
+                  newLayers[slotIndex] = newLayer;
+              }
              
              return { ...prev, layers: newLayers };
           });
@@ -1029,87 +1049,98 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
                                <ZoomIn className="w-3.5 h-3.5 text-gray-500" />
                            </div>
                        </div>
-                       {config.productType === 'basica' && (
-                           <>
-                               <div className="space-y-0.5">
-                                   <span className="text-[8px] font-extrabold text-gray-400 uppercase">SECCIÓN</span>
-                                   <select
-                                       value={activeLayer.targetMesh || 'basica_pecho'}
-                                       onChange={(e) => {
-                                            const val = e.target.value as any;
-                                            setConfig(prev => {
-                                                const newLayers = [...prev.layers];
-                                                let newScale = newLayers[activeLayerIndex].position.scale;
-                                                let newX = newLayers[activeLayerIndex].position.x;
-                                                let newY = newLayers[activeLayerIndex].position.y;
-                                                
-                                                if (val === 'basica_mangder') {
-                                                    newScale = 0.340;
-                                                    newX = -0.020;
-                                                    newY = -0.110;
-                                                } else if (val === 'basica_mangiz') {
-                                                    newScale = 0.340;
-                                                    newX = 0.007;
-                                                    newY = -0.448;
-                                                } else if (val === 'basica_pecho') {
-                                                    newScale = 1.200;
-                                                    newX = 0.000;
-                                                    newY = -0.100;
-                                                } else if (val === 'basica_espalda') {
-                                                    newScale = 1.200;
-                                                    newX = 0.100;
-                                                    newY = -0.100;
-                                                }
+                       {(config.productType === 'basica' || config.productType === 'oversize') && (
+                            <>
+                                <div className="space-y-0.5">
+                                    <span className="text-[8px] font-extrabold text-gray-400 uppercase">SECCIÓN</span>
+                                    <select
+                                        value={activeLayer.targetMesh || (config.productType === 'oversize' ? 'oversize_pecho' : 'basica_pecho')}
+                                        onChange={(e) => {
+                                             const val = e.target.value as any;
+                                             setConfig(prev => {
+                                                 const newLayers = [...prev.layers];
+                                                 let newScale = newLayers[activeLayerIndex].position.scale;
+                                                 let newX = newLayers[activeLayerIndex].position.x;
+                                                 let newY = newLayers[activeLayerIndex].position.y;
+                                                 
+                                                 if (val === 'basica_mangder' || val === 'oversize_mangder') {
+                                                     newScale = 0.340;
+                                                     newX = -0.020;
+                                                     newY = -0.110;
+                                                 } else if (val === 'basica_mangiz' || val === 'oversize_mangiz') {
+                                                     newScale = 0.340;
+                                                     newX = 0.007;
+                                                     newY = -0.448;
+                                                 } else if (val === 'basica_pecho' || val === 'oversize_pecho') {
+                                                     newScale = 1.200;
+                                                     newX = 0.000;
+                                                     newY = -0.100;
+                                                 } else if (val === 'basica_espalda' || val === 'oversize_espalda') {
+                                                     newScale = 1.200;
+                                                     newX = 0.100;
+                                                     newY = -0.100;
+                                                 }
 
-                                                newLayers[activeLayerIndex] = {
-                                                    ...newLayers[activeLayerIndex],
-                                                    targetMesh: val,
-                                                    side: val === 'basica_espalda' ? 'back' : 'front',
-                                                    position: {
-                                                        ...newLayers[activeLayerIndex].position,
-                                                        scale: newScale,
-                                                        x: newX,
-                                                        y: newY
-                                                    }
-                                                };
-                                                return { ...prev, layers: newLayers };
-                                            });
-                                       }}
-                                       className="w-full text-[10px] font-bold p-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 focus:outline-none"
-                                   >
-                                       <option value="basica_pecho">Pecho / Frente</option>
-                                       <option value="basica_espalda">Espalda</option>
-                                       <option value="basica_mangiz">Manga Izquierda</option>
-                                       <option value="basica_mangder">Manga Derecha</option>
-                                   </select>
-                               </div>
-                               <div className="space-y-0.5">
-                                   <span className="text-[8px] font-extrabold text-gray-400 uppercase">ROTACIÓN ({activeLayer.rotation || 0}°)</span>
-                                   <div className="flex items-center gap-2 bg-gray-50/40 dark:bg-gray-800/40 p-1 rounded-lg">
-                                       <RotateCcw className="w-3.5 h-3.5 text-gray-500" />
-                                       <input 
-                                           type="range" 
-                                           min="0" 
-                                           max="360" 
-                                           step="1" 
-                                           value={activeLayer.rotation || 0} 
-                                           onChange={(e) => {
-                                               const val = parseInt(e.target.value, 10);
-                                               setConfig(prev => {
-                                                   const newLayers = [...prev.layers];
-                                                   newLayers[activeLayerIndex] = {
-                                                       ...newLayers[activeLayerIndex],
-                                                       rotation: val
-                                                   };
-                                                   return { ...prev, layers: newLayers };
-                                               });
-                                           }} 
-                                           className="w-full accent-pink-500 h-1 bg-gray-200 dark:bg-gray-750 rounded appearance-none cursor-pointer" 
-                                       />
-                                   </div>
-                               </div>
-                           </>
-                       )}
+                                                 newLayers[activeLayerIndex] = {
+                                                     ...newLayers[activeLayerIndex],
+                                                     targetMesh: val,
+                                                     side: (val === 'basica_espalda' || val === 'oversize_espalda') ? 'back' : 'front',
+                                                     position: {
+                                                         ...newLayers[activeLayerIndex].position,
+                                                         scale: newScale,
+                                                         x: newX,
+                                                         y: newY
+                                                     }
+                                                 };
+                                                 return { ...prev, layers: newLayers };
+                                             });
+                                        }}
+                                        className="w-full text-[10px] font-bold p-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 focus:outline-none"
+                                    >
+                                        {config.productType === 'oversize' ? (
+                                            <>
+                                                <option value="oversize_pecho">Pecho / Frente</option>
+                                                <option value="oversize_espalda">Espalda</option>
+                                                <option value="oversize_mangiz">Manga Izquierda</option>
+                                                <option value="oversize_mangder">Manga Derecha</option>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <option value="basica_pecho">Pecho / Frente</option>
+                                                <option value="basica_espalda">Espalda</option>
+                                                <option value="basica_mangiz">Manga Izquierda</option>
+                                                <option value="basica_mangder">Manga Derecha</option>
+                                            </>
+                                        )}
+                                    </select>
+                                </div>
+                                <div className="space-y-0.5">
+                                    <span className="text-[8px] font-extrabold text-gray-400 uppercase">ROTACIÓN ({activeLayer.rotation || 0}°)</span>
+                                    <div className="flex items-center gap-2 bg-gray-50/40 dark:bg-gray-800/40 p-1 rounded-lg">
+                                        <RotateCcw className="w-3.5 h-3.5 text-gray-500" />
+                                        <input 
+                                            type="range" 
+                                            min="0" 
+                                            max="360" 
+                                            step="1" 
+                                            value={activeLayer.rotation || 0} 
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value, 10);
+                                                setConfig(prev => {
+                                                    const newLayers = [...prev.layers];
+                                                    newLayers[activeLayerIndex] = {
+                                                        ...newLayers[activeLayerIndex],
+                                                        rotation: val
+                                                    };
+                                                    return { ...prev, layers: newLayers };
+                                                });
+                                            }} 
+                                            className="w-full accent-pink-500 h-1 bg-gray-200 dark:bg-gray-750 rounded appearance-none cursor-pointer" 
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        )}
                        <div className="space-y-0.5">
                            <span className="text-[8px] font-extrabold text-gray-400 uppercase">TRANSPARENCIA ({Math.round((config.designOpacity ?? appearance.designOpacity) * 100)}%)</span>
                            <div className="flex items-center gap-2 bg-gray-50/40 dark:bg-gray-800/40 p-1 rounded-lg">
@@ -1245,62 +1276,73 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
             
             {activeLayer && (
                 <div className="mt-2 space-y-2">
-                     {config.productType === 'basica' && (
-                        <div className="space-y-1 animate-fade-in text-left">
-                          <label className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400 flex items-center gap-2 tracking-wide">
-                            <Shirt className="w-3.5 h-3.5 text-pink-500" /> Sección de la Prenda
-                          </label>
-                          <select
-                            value={activeLayer.targetMesh || 'basica_pecho'}
-                            onChange={(e) => {
-                              const val = e.target.value as any;
-                              setConfig(prev => {
-                                const newLayers = [...prev.layers];
-                                let newScale = newLayers[activeLayerIndex].position.scale;
-                                let newX = newLayers[activeLayerIndex].position.x;
-                                let newY = newLayers[activeLayerIndex].position.y;
-                                
-                                if (val === 'basica_mangder') {
-                                  newScale = 0.340;
-                                  newX = -0.020;
-                                  newY = -0.110;
-                                } else if (val === 'basica_mangiz') {
-                                  newScale = 0.340;
-                                  newX = 0.007;
-                                  newY = -0.448;
-                                } else if (val === 'basica_pecho') {
-                                  newScale = 1.200;
-                                  newX = 0.000;
-                                  newY = -0.100;
-                                } else if (val === 'basica_espalda') {
-                                  newScale = 1.200;
-                                  newX = 0.100;
-                                  newY = -0.100;
-                                }
+                     {(config.productType === 'basica' || config.productType === 'oversize') && (
+                         <div className="space-y-1 animate-fade-in text-left">
+                           <label className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400 flex items-center gap-2 tracking-wide">
+                             <Shirt className="w-3.5 h-3.5 text-pink-500" /> Sección de la Prenda
+                           </label>
+                           <select
+                             value={activeLayer.targetMesh || (config.productType === 'oversize' ? 'oversize_pecho' : 'basica_pecho')}
+                             onChange={(e) => {
+                               const val = e.target.value as any;
+                               setConfig(prev => {
+                                 const newLayers = [...prev.layers];
+                                 let newScale = newLayers[activeLayerIndex].position.scale;
+                                 let newX = newLayers[activeLayerIndex].position.x;
+                                 let newY = newLayers[activeLayerIndex].position.y;
+                                 
+                                 if (val === 'basica_mangder' || val === 'oversize_mangder') {
+                                   newScale = 0.340;
+                                   newX = -0.020;
+                                   newY = -0.110;
+                                 } else if (val === 'basica_mangiz' || val === 'oversize_mangiz') {
+                                   newScale = 0.340;
+                                   newX = 0.007;
+                                   newY = -0.448;
+                                 } else if (val === 'basica_pecho' || val === 'oversize_pecho') {
+                                   newScale = 1.200;
+                                   newX = 0.000;
+                                   newY = -0.100;
+                                 } else if (val === 'basica_espalda' || val === 'oversize_espalda') {
+                                   newScale = 1.200;
+                                   newX = 0.100;
+                                   newY = -0.100;
+                                 }
 
-                                newLayers[activeLayerIndex] = {
-                                  ...newLayers[activeLayerIndex],
-                                  targetMesh: val,
-                                  side: val === 'basica_espalda' ? 'back' : 'front',
-                                  position: {
-                                    ...newLayers[activeLayerIndex].position,
-                                    scale: newScale,
-                                    x: newX,
-                                    y: newY
-                                  }
-                                };
-                                return { ...prev, layers: newLayers };
-                              });
-                            }}
-                            className="w-full text-xs font-semibold p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-pink-500 shadow-sm"
-                          >
-                            <option value="basica_pecho">Pecho / Frente</option>
-                            <option value="basica_espalda">Espalda</option>
-                            <option value="basica_mangiz">Manga Izquierda</option>
-                            <option value="basica_mangder">Manga Derecha</option>
-                          </select>
-                        </div>
-                     )}
+                                 newLayers[activeLayerIndex] = {
+                                   ...newLayers[activeLayerIndex],
+                                   targetMesh: val,
+                                   side: (val === 'basica_espalda' || val === 'oversize_espalda') ? 'back' : 'front',
+                                   position: {
+                                     ...newLayers[activeLayerIndex].position,
+                                     scale: newScale,
+                                     x: newX,
+                                     y: newY
+                                   }
+                                 };
+                                 return { ...prev, layers: newLayers };
+                               });
+                             }}
+                             className="w-full text-xs font-semibold p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-pink-500 shadow-sm"
+                           >
+                             {config.productType === 'oversize' ? (
+                               <>
+                                 <option value="oversize_pecho">Pecho / Frente</option>
+                                 <option value="oversize_espalda">Espalda</option>
+                                 <option value="oversize_mangiz">Manga Izquierda</option>
+                                 <option value="oversize_mangder">Manga Derecha</option>
+                               </>
+                             ) : (
+                               <>
+                                 <option value="basica_pecho">Pecho / Frente</option>
+                                 <option value="basica_espalda">Espalda</option>
+                                 <option value="basica_mangiz">Manga Izquierda</option>
+                                 <option value="basica_mangder">Manga Derecha</option>
+                               </>
+                             )}
+                           </select>
+                         </div>
+                      )}
                      
                      <div className="flex gap-2">
                          <button
@@ -1381,7 +1423,7 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
               </div>
             </div>
 
-            {config.productType === 'basica' && (
+            {(config.productType === 'basica' || config.productType === 'oversize') && (
               <>
 
                 <div className="space-y-2 animate-fade-in">
