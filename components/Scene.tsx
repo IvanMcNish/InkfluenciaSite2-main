@@ -530,11 +530,7 @@ const BasicaSubmeshPlain: React.FC<{
 
     mat.color.set(new THREE.Color(materialColor));
     mat.normalMap = normalMap;
-<<<<<<< HEAD
-    mat.normalScale.set(0.75, 0.75);
-=======
     mat.normalScale.set(0.65, 0.65);
->>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
     mat.roughness = 0.9;
     mat.metalness = 0.0;
     mat.map = null;
@@ -629,19 +625,12 @@ const OversizeLayerItem: React.FC<{
 
   const uniformScaleFactor = uvBounds.width / physicalBounds.width;
   const finalScaleX = scaleX * uniformScaleFactor;
-<<<<<<< HEAD
   // Negate Y to flip the image upright (oversize UVs are V-flipped relative to the ortho camera)
   const finalScaleY = -(scaleY * uniformScaleFactor);
 
   const offsetX = layer.position?.x || 0;
   // Negate Y offset so that moving "up" in the UI moves the image up in the canvas
   const offsetY = -(layer.position?.y || 0);
-=======
-  const finalScaleY = scaleY * uniformScaleFactor;
-
-  const offsetX = layer.position?.x || 0;
-  const offsetY = layer.position?.y || 0;
->>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
   const rotDeg = layer.rotation || 0;
   const rotationRad = rotDeg * (Math.PI / 180);
 
@@ -734,7 +723,6 @@ const OversizeSubmeshWithTexture: React.FC<{
     return { width, height, depth };
   }, [meshData.geometry]);
 
-<<<<<<< HEAD
   const normalScaleVec = useMemo(() => new THREE.Vector2(0.95, 0.95), []);
 
   const dummyTexture = useMemo(() => {
@@ -742,28 +730,6 @@ const OversizeSubmeshWithTexture: React.FC<{
     t.flipY = false;
     return t;
   }, []);
-=======
-  const normalScaleVec = useMemo(() => new THREE.Vector2(0.65, 0.65), []);
-
-  const material = useMemo(() => {
-    let baseMat: THREE.MeshStandardMaterial;
-    if (Array.isArray(meshData.material)) {
-      baseMat = (meshData.material[0] ? meshData.material[0].clone() : new THREE.MeshStandardMaterial()) as THREE.MeshStandardMaterial;
-    } else if (meshData.material) {
-      baseMat = meshData.material.clone() as THREE.MeshStandardMaterial;
-    } else {
-      baseMat = new THREE.MeshStandardMaterial();
-    }
-
-    baseMat.color.set(new THREE.Color(materialColor));
-    baseMat.normalMap = normalMap;
-    baseMat.normalScale.copy(normalScaleVec);
-    baseMat.roughness = 0.9;
-    baseMat.metalness = 0.0;
-    
-    return baseMat;
-  }, [meshData.material, materialColor, normalMap, normalScaleVec]);
->>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
 
   return (
     <Mesh
@@ -773,7 +739,6 @@ const OversizeSubmeshWithTexture: React.FC<{
       onPointerMove={onPointerMove}
       onPointerDown={onPointerDown}
     >
-<<<<<<< HEAD
       <meshStandardMaterial
         color="#ffffff"
         normalMap={normalMap}
@@ -795,11 +760,6 @@ const OversizeSubmeshWithTexture: React.FC<{
             far={10}
             position={[0, 0, 5]}
           />
-=======
-      <meshStandardMaterial {...material}>
-        <RenderTexture attach="map" anisotropy={renderer.capabilities.getMaxAnisotropy()}>
-          <color attach="background" args={[materialColor]} />
->>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
           <ambientLight intensity={1.5} />
           <directionalLight position={[0, 0, 5]} intensity={1.0} />
           {matchingLayers.map((layer) => (
@@ -824,42 +784,15 @@ const OversizeSubmeshPlain: React.FC<{
   onPointerMove: (e: any) => void;
   onPointerDown?: (e: any) => void;
 }> = ({ meshData, materialColor, normalMap, onPointerMove, onPointerDown }) => {
-<<<<<<< HEAD
   const normalScaleVec = useMemo(() => new THREE.Vector2(0.95, 0.95), []);
-=======
-  const material = useMemo(() => {
-    let mat: THREE.MeshStandardMaterial;
-    if (Array.isArray(meshData.material)) {
-      mat = (meshData.material[0] ? meshData.material[0].clone() : new THREE.MeshStandardMaterial()) as THREE.MeshStandardMaterial;
-    } else if (meshData.material) {
-      mat = meshData.material.clone() as THREE.MeshStandardMaterial;
-    } else {
-      mat = new THREE.MeshStandardMaterial();
-    }
-
-    mat.color.set(new THREE.Color(materialColor));
-    mat.normalMap = normalMap;
-    mat.normalScale.set(0.65, 0.65);
-    mat.roughness = 0.9;
-    mat.metalness = 0.0;
-    mat.map = null;
-
-    return mat;
-  }, [meshData.material, materialColor, normalMap]);
->>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
 
   return (
     <Mesh
       geometry={meshData.geometry}
-<<<<<<< HEAD
-=======
-      material={material}
->>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
       castShadow
       receiveShadow
       onPointerMove={onPointerMove}
       onPointerDown={onPointerDown}
-<<<<<<< HEAD
     >
       <meshStandardMaterial
         color={materialColor}
@@ -869,9 +802,6 @@ const OversizeSubmeshPlain: React.FC<{
         metalness={0.0}
       />
     </Mesh>
-=======
-    />
->>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
   );
 };
 
@@ -932,20 +862,12 @@ const OversizeMeasurementGuides: React.FC<{
   const { center, rotation } = useMemo(() => {
     const found = meshes.find(m => m.name.toLowerCase() === targetMesh.toLowerCase());
     const c = found ? new THREE.Vector3() : new THREE.Vector3(0, 0, 0.2);
-<<<<<<< HEAD
-
-=======
     
->>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
     if (found) {
       found.geometry.computeBoundingBox();
       found.geometry.boundingBox?.getCenter(c);
     }
-<<<<<<< HEAD
-
-=======
     
->>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
     let rot: [number, number, number] = [0, 0, 0];
     const floatOffset = 0.55;
 
@@ -962,11 +884,7 @@ const OversizeMeasurementGuides: React.FC<{
       c.z += floatOffset;
       rot = [0, 0, 0];
     }
-<<<<<<< HEAD
-
-=======
     
->>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
     return { center: c, rotation: rot };
   }, [targetMesh, meshes, isBack, isMangIz, isMangDer]);
 
@@ -987,11 +905,7 @@ const OversizeMeasurementGuides: React.FC<{
   const finalPos = new THREE.Vector3(finalX, finalY, finalZ);
 
   return (
-<<<<<<< HEAD
-    <MeasurementGuides
-=======
     <MeasurementGuides 
->>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
       width={scaleX}
       height={scaleY}
       position={[finalPos.x, finalPos.y, finalPos.z]}
@@ -1415,11 +1329,6 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
 
         const geo = m.geometry.clone();
         geo.applyMatrix4(m.matrixWorld);
-
-        // Strip vertex colors for oversize model to avoid gray tinting / matching basic color perfectly
-        if (config.productType === 'oversize' && geo.attributes.color) {
-          geo.deleteAttribute('color');
-        }
 
         // Corrective rotation for tshirt-2.glb (it is rotated 90 deg sideways on Y axis)
         if (objUrl.toLowerCase().includes('tshirt-2') || objUrl.toLowerCase().includes('tshirt_2')) {
@@ -2126,14 +2035,14 @@ export const Scene: React.FC<SceneProps> = ({ config, captureRef, activeLayerSid
           const targetIndex = activeLayerIndex !== undefined ? activeLayerIndex : 0;
           const activeLayer = config.layers[targetIndex];
           const isRenderTexture = config.productType === 'basica' || config.productType === 'oversize';
-          const imageSizeText = activeLayer
-            ? (activeLayer.imageWidth && activeLayer.imageHeight
-              ? `${activeLayer.imageWidth}x${activeLayer.imageHeight}`
-              : '2048x2048')
+          const imageSizeText = activeLayer 
+            ? (activeLayer.imageWidth && activeLayer.imageHeight 
+               ? `${activeLayer.imageWidth}x${activeLayer.imageHeight}` 
+               : '2048x2048') 
             : '--';
-
+          
           const defaultNode = config.productType === 'oversize' ? 'OVERSIZE_PECHO' : (config.productType === 'basica' ? 'BASICA_PECHO' : 'N/A');
-          const nodeName = activeLayer
+          const nodeName = activeLayer 
             ? (activeLayer.targetMesh || (config.productType === 'oversize' ? 'oversize_pecho' : 'basica_pecho')).replace('basica_', '').replace('oversize_', '').toUpperCase()
             : defaultNode.replace('BASICA_', '').replace('OVERSIZE_', '');
 
@@ -2143,7 +2052,6 @@ export const Scene: React.FC<SceneProps> = ({ config, captureRef, activeLayerSid
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                 DEV HUD
               </div>
-<<<<<<< HEAD
               <div className="space-y-0.5">
                 <div>Nodo Activo: <span className="text-white font-bold">{nodeName}</span></div>
                 <div>Render Texture: <span className="text-white font-bold">{isRenderTexture ? `ACTIVO (2D) - ${imageSizeText}` : 'INACTIVO (3D Decal)'}</span></div>
@@ -2152,13 +2060,6 @@ export const Scene: React.FC<SceneProps> = ({ config, captureRef, activeLayerSid
                 <div>Escala: <span className="text-white">{activeLayer ? (activeLayer.position.scale || 0).toFixed(3) : '--'}</span></div>
                 <div>Rendimiento: <span id="dev-fps" className="text-white font-bold">-- FPS</span></div>
               </div>
-=======
-              <div>Nodo: <span className="text-white font-bold">{(activeLayer.targetMesh || (config.productType === 'oversize' ? 'oversize_pecho' : 'basica_pecho')).replace('basica_', '').replace('oversize_', '').toUpperCase()}</span></div>
-              <div>Coord X: <span className="text-white">{(activeLayer.position.x || 0).toFixed(3)}</span></div>
-              <div>Coord Y: <span className="text-white">{(activeLayer.position.y || 0).toFixed(3)}</span></div>
-              <div>Escala: <span className="text-white">{(activeLayer.position.scale || 0).toFixed(3)}</span></div>
-              <div>Rendimiento: <span id="dev-fps" className="text-white font-bold">-- FPS</span></div>
->>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
             </div>
           );
         })()
