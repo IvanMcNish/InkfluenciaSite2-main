@@ -530,7 +530,7 @@ const BasicaSubmeshPlain: React.FC<{
 
     mat.color.set(new THREE.Color(materialColor));
     mat.normalMap = normalMap;
-    mat.normalScale.set(0.65, 0.65);
+    mat.normalScale.set(0.75, 0.75);
     mat.roughness = 0.9;
     mat.metalness = 0.0;
     mat.map = null;
@@ -862,12 +862,12 @@ const OversizeMeasurementGuides: React.FC<{
   const { center, rotation } = useMemo(() => {
     const found = meshes.find(m => m.name.toLowerCase() === targetMesh.toLowerCase());
     const c = found ? new THREE.Vector3() : new THREE.Vector3(0, 0, 0.2);
-    
+
     if (found) {
       found.geometry.computeBoundingBox();
       found.geometry.boundingBox?.getCenter(c);
     }
-    
+
     let rot: [number, number, number] = [0, 0, 0];
     const floatOffset = 0.55;
 
@@ -884,7 +884,7 @@ const OversizeMeasurementGuides: React.FC<{
       c.z += floatOffset;
       rot = [0, 0, 0];
     }
-    
+
     return { center: c, rotation: rot };
   }, [targetMesh, meshes, isBack, isMangIz, isMangDer]);
 
@@ -905,7 +905,7 @@ const OversizeMeasurementGuides: React.FC<{
   const finalPos = new THREE.Vector3(finalX, finalY, finalZ);
 
   return (
-    <MeasurementGuides 
+    <MeasurementGuides
       width={scaleX}
       height={scaleY}
       position={[finalPos.x, finalPos.y, finalPos.z]}
@@ -2040,14 +2040,14 @@ export const Scene: React.FC<SceneProps> = ({ config, captureRef, activeLayerSid
           const targetIndex = activeLayerIndex !== undefined ? activeLayerIndex : 0;
           const activeLayer = config.layers[targetIndex];
           const isRenderTexture = config.productType === 'basica' || config.productType === 'oversize';
-          const imageSizeText = activeLayer 
-            ? (activeLayer.imageWidth && activeLayer.imageHeight 
-               ? `${activeLayer.imageWidth}x${activeLayer.imageHeight}` 
-               : '2048x2048') 
+          const imageSizeText = activeLayer
+            ? (activeLayer.imageWidth && activeLayer.imageHeight
+              ? `${activeLayer.imageWidth}x${activeLayer.imageHeight}`
+              : '2048x2048')
             : '--';
-          
+
           const defaultNode = config.productType === 'oversize' ? 'OVERSIZE_PECHO' : (config.productType === 'basica' ? 'BASICA_PECHO' : 'N/A');
-          const nodeName = activeLayer 
+          const nodeName = activeLayer
             ? (activeLayer.targetMesh || (config.productType === 'oversize' ? 'oversize_pecho' : 'basica_pecho')).replace('basica_', '').replace('oversize_', '').toUpperCase()
             : defaultNode.replace('BASICA_', '').replace('OVERSIZE_', '');
 
