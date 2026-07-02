@@ -483,6 +483,7 @@ const BasicaSubmeshWithTexture: React.FC<{
         normalScale={normalScaleVec}
         roughness={0.9}
         metalness={0.0}
+      //side={THREE.DoubleSide}
       >
         <RenderTexture attach="map" width={2048} height={2048}>
           <color attach="background" args={[materialColor]} />
@@ -658,9 +659,10 @@ const OversizeSubmeshWithTexture: React.FC<{
   matchingLayers: DesignLayer[];
   materialColor: string;
   normalMap: THREE.Texture;
+  aoMap: THREE.Texture;
   onPointerMove: (e: any) => void;
   onPointerDown?: (e: any) => void;
-}> = ({ meshData, matchingLayers, materialColor, normalMap, onPointerMove, onPointerDown }) => {
+}> = ({ meshData, matchingLayers, materialColor, normalMap, aoMap, onPointerMove, onPointerDown }) => {
   const renderer = useThree(state => state.gl);
 
   const uvBounds = useMemo(() => {
@@ -745,6 +747,8 @@ const OversizeSubmeshWithTexture: React.FC<{
         normalScale={normalScaleVec}
         roughness={0.9}
         metalness={0.0}
+        aoMap={aoMap}
+        aoMapIntensity={1.0}
         map={dummyTexture}
         map-flipY={false}
       >
@@ -781,9 +785,10 @@ const OversizeSubmeshPlain: React.FC<{
   meshData: any;
   materialColor: string;
   normalMap: THREE.Texture | null;
+  aoMap: THREE.Texture | null;
   onPointerMove: (e: any) => void;
   onPointerDown?: (e: any) => void;
-}> = ({ meshData, materialColor, normalMap, onPointerMove, onPointerDown }) => {
+}> = ({ meshData, materialColor, normalMap, aoMap, onPointerMove, onPointerDown }) => {
   const normalScaleVec = useMemo(() => new THREE.Vector2(0.95, 0.95), []);
 
   return (
@@ -800,6 +805,8 @@ const OversizeSubmeshPlain: React.FC<{
         normalScale={normalScaleVec}
         roughness={0.9}
         metalness={0.0}
+        aoMap={aoMap}
+        aoMapIntensity={1.0}
       />
     </Mesh>
   );
@@ -810,9 +817,10 @@ const OversizeSubmesh: React.FC<{
   matchingLayers: DesignLayer[];
   materialColor: string;
   normalMap: THREE.Texture;
+  aoMap: THREE.Texture;
   onPointerMove: (e: any) => void;
   onPointerDown?: (e: any) => void;
-}> = ({ meshData, matchingLayers, materialColor, normalMap, onPointerMove, onPointerDown }) => {
+}> = ({ meshData, matchingLayers, materialColor, normalMap, aoMap, onPointerMove, onPointerDown }) => {
   if (matchingLayers && matchingLayers.length > 0) {
     return (
       <OversizeSubmeshWithTexture
@@ -820,6 +828,7 @@ const OversizeSubmesh: React.FC<{
         matchingLayers={matchingLayers}
         materialColor={materialColor}
         normalMap={normalMap}
+        aoMap={aoMap}
         onPointerMove={onPointerMove}
         onPointerDown={onPointerDown}
       />
@@ -831,6 +840,7 @@ const OversizeSubmesh: React.FC<{
       meshData={meshData}
       materialColor={materialColor}
       normalMap={normalMap}
+      aoMap={aoMap}
       onPointerMove={onPointerMove}
       onPointerDown={onPointerDown}
     />
@@ -862,12 +872,12 @@ const OversizeMeasurementGuides: React.FC<{
   const { center, rotation } = useMemo(() => {
     const found = meshes.find(m => m.name.toLowerCase() === targetMesh.toLowerCase());
     const c = found ? new THREE.Vector3() : new THREE.Vector3(0, 0, 0.2);
-    
+
     if (found) {
       found.geometry.computeBoundingBox();
       found.geometry.boundingBox?.getCenter(c);
     }
-    
+
     let rot: [number, number, number] = [0, 0, 0];
     const floatOffset = 0.55;
 
@@ -884,7 +894,7 @@ const OversizeMeasurementGuides: React.FC<{
       c.z += floatOffset;
       rot = [0, 0, 0];
     }
-    
+
     return { center: c, rotation: rot };
   }, [targetMesh, meshes, isBack, isMangIz, isMangDer]);
 
@@ -905,7 +915,7 @@ const OversizeMeasurementGuides: React.FC<{
   const finalPos = new THREE.Vector3(finalX, finalY, finalZ);
 
   return (
-    <MeasurementGuides 
+    <MeasurementGuides
       width={scaleX}
       height={scaleY}
       position={[finalPos.x, finalPos.y, finalPos.z]}
@@ -1313,6 +1323,48 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
     }
   }, [normalMap]);
 
+  // Load oversize fabric normal map texture (1 to 1 mold, clamp wrapping)
+  const oversizeNormalMap = useTexture('/normaldetailsv2.jpg');
+  useEffect(() => {
+    if (oversizeNormalMap) {
+      oversizeNormalMap.wrapS = THREE.ClampToEdgeWrapping;
+      oversizeNormalMap.wrapT = THREE.ClampToEdgeWrapping;
+      oversizeNormalMap.repeat.set(1, 1);
+      oversizeNormalMap.flipY = false; // Flip vertically to match the inverted UV coordinates of the oversize model
+      oversizeNormalMap.anisotropy = 16;
+      oversizeNormalMap.generateMipmaps = true;
+      oversizeNormalMap.needsUpdate = true;
+    }
+  }, [oversizeNormalMap]);
+
+  // Load oversize fabric external AO map (1 to 1 mold, clamp wrapping, flipY = false)
+  const aoOutsideMap = useTexture('/ao_tshirt_outside.jpg');
+  useEffect(() => {
+    if (aoOutsideMap) {
+      aoOutsideMap.wrapS = THREE.ClampToEdgeWrapping;
+      aoOutsideMap.wrapT = THREE.ClampToEdgeWrapping;
+      aoOutsideMap.repeat.set(1, 1);
+      aoOutsideMap.flipY = false;
+      aoOutsideMap.anisotropy = 16;
+      aoOutsideMap.generateMipmaps = true;
+      aoOutsideMap.needsUpdate = true;
+    }
+  }, [aoOutsideMap]);
+
+  // Load oversize fabric internal AO map (1 to 1 mold, clamp wrapping, flipY = false)
+  const aoInsideMap = useTexture('/ao_tshirt_inside.jpg');
+  useEffect(() => {
+    if (aoInsideMap) {
+      aoInsideMap.wrapS = THREE.ClampToEdgeWrapping;
+      aoInsideMap.wrapT = THREE.ClampToEdgeWrapping;
+      aoInsideMap.repeat.set(1, 1);
+      aoInsideMap.flipY = false;
+      aoInsideMap.anisotropy = 16;
+      aoInsideMap.generateMipmaps = true;
+      aoInsideMap.needsUpdate = true;
+    }
+  }, [aoInsideMap]);
+
   const { meshes, zFront, zBack } = useMemo(() => {
     scene.updateMatrixWorld(true);
 
@@ -1329,6 +1381,11 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
 
         const geo = m.geometry.clone();
         geo.applyMatrix4(m.matrixWorld);
+
+        // Copy uv to uv2 for correct aoMap mapping in Three.js
+        if (geo.attributes.uv && !geo.attributes.uv2) {
+          geo.setAttribute('uv2', geo.attributes.uv.clone());
+        }
 
         // Corrective rotation for tshirt-2.glb (it is rotated 90 deg sideways on Y axis)
         if (objUrl.toLowerCase().includes('tshirt-2') || objUrl.toLowerCase().includes('tshirt_2')) {
@@ -1350,6 +1407,12 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
           const m = child as THREE.Mesh;
           const geo = m.geometry.clone();
           geo.applyMatrix4(m.matrixWorld);
+
+          // Copy uv to uv2 for correct aoMap mapping in Three.js
+          if (geo.attributes.uv && !geo.attributes.uv2) {
+            geo.setAttribute('uv2', geo.attributes.uv.clone());
+          }
+
           tempMeshes.push({
             name: m.name || '',
             geo,
@@ -1515,7 +1578,8 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
               meshData={meshData}
               matchingLayers={matchingLayers}
               materialColor={materialColor}
-              normalMap={normalMap}
+              normalMap={oversizeNormalMap}
+              aoMap={meshNameLower === 'oversize_cuello' ? aoInsideMap : aoOutsideMap}
               onPointerMove={handlePointerMove}
               onPointerDown={handlePointerDown}
             />
@@ -2035,14 +2099,14 @@ export const Scene: React.FC<SceneProps> = ({ config, captureRef, activeLayerSid
           const targetIndex = activeLayerIndex !== undefined ? activeLayerIndex : 0;
           const activeLayer = config.layers[targetIndex];
           const isRenderTexture = config.productType === 'basica' || config.productType === 'oversize';
-          const imageSizeText = activeLayer 
-            ? (activeLayer.imageWidth && activeLayer.imageHeight 
-               ? `${activeLayer.imageWidth}x${activeLayer.imageHeight}` 
-               : '2048x2048') 
+          const imageSizeText = activeLayer
+            ? (activeLayer.imageWidth && activeLayer.imageHeight
+              ? `${activeLayer.imageWidth}x${activeLayer.imageHeight}`
+              : '2048x2048')
             : '--';
-          
+
           const defaultNode = config.productType === 'oversize' ? 'OVERSIZE_PECHO' : (config.productType === 'basica' ? 'BASICA_PECHO' : 'N/A');
-          const nodeName = activeLayer 
+          const nodeName = activeLayer
             ? (activeLayer.targetMesh || (config.productType === 'oversize' ? 'oversize_pecho' : 'basica_pecho')).replace('basica_', '').replace('oversize_', '').toUpperCase()
             : defaultNode.replace('BASICA_', '').replace('OVERSIZE_', '');
 
