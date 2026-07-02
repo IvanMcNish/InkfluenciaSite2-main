@@ -231,6 +231,7 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
         const img = new Image();
         img.onload = () => {
           setConfig(prev => {
+<<<<<<< HEAD
             const newLayers = [...prev.layers];
             const isBasica = prev.productType === 'basica';
             const isOversize = prev.productType === 'oversize';
@@ -266,6 +267,41 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
             }
 
             return { ...prev, layers: newLayers };
+=======
+             const newLayers = [...prev.layers];
+              const isBasica = prev.productType === 'basica';
+              const isOversize = prev.productType === 'oversize';
+              const is2DProj = isBasica || isOversize;
+              
+              const defaultTargetMesh = is2DProj 
+                ? (slotIndex === 1 
+                   ? (prev.productType === 'oversize' ? 'oversize_espalda' as const : 'basica_espalda' as const) 
+                   : (prev.productType === 'oversize' ? 'oversize_pecho' as const : 'basica_pecho' as const))
+                : undefined;
+
+              const newLayer: DesignLayer = {
+                  id: `layer-${Date.now()}`,
+                  textureUrl: url,
+                  originalUrl: url,
+                  side: (slotIndex === 1 ? 'back' : 'front') as TShirtSide,
+                  position: is2DProj 
+                    ? (slotIndex === 1 
+                       ? { x: 0.100, y: -0.100, scale: 1.200 } 
+                       : { x: 0.000, y: -0.100, scale: 1.200 })
+                    : { x: 0, y: 0.0, scale: 1.200 },
+                  rotation: 0,
+                  targetMesh: defaultTargetMesh,
+              };
+              
+              if (newLayers[slotIndex]) {
+                  newLayers[slotIndex] = { ...newLayers[slotIndex], textureUrl: url, originalUrl: url, filters: undefined, chromaKey: undefined, targetMesh: is2DProj ? (newLayers[slotIndex]?.targetMesh || defaultTargetMesh) : undefined };
+              } else {
+                  if (slotIndex === 1 && !newLayers[0]) return prev; 
+                  newLayers[slotIndex] = newLayer;
+              }
+             
+             return { ...prev, layers: newLayers };
+>>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
           });
           setActiveLayerIndex(slotIndex);
           // Auto-lock view to help user position immediately
@@ -944,6 +980,7 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
       )}
 
       {/* Mobile Configuration Overlay */}
+<<<<<<< HEAD
       <div className={`lg:hidden absolute transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] z-[90] max-h-[70vh] ${isLandscape ? 'origin-right' : 'origin-bottom'} ${isLandscape
         ? `right-4 top-[80px] bottom-10 w-64 ${isMobilePanelOpen && mobileActiveTab ? 'translate-x-0 opacity-100 scale-100 pointer-events-auto' : 'translate-x-12 opacity-0 scale-95 pointer-events-none'}`
         : `bottom-1 left-4 right-4 ${isMobilePanelOpen && mobileActiveTab ? 'translate-y-0 opacity-100 scale-100 pointer-events-auto' : 'translate-y-12 opacity-0 scale-95 pointer-events-none'}`
@@ -956,6 +993,212 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
               {mobileActiveTab === 'adjust' && 'Ajustes'}
             </h3>
             <button onClick={() => setMobileActiveTab(null)} className="p-0.5 rounded-full text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 active:scale-95 transition-transform"><X className="w-4 h-4" /></button>
+=======
+      <div className={`lg:hidden absolute transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] z-[90] max-h-[70vh] ${isLandscape ? 'origin-right' : 'origin-bottom'} ${
+          isLandscape 
+          ? `right-4 top-[80px] bottom-10 w-64 ${isMobilePanelOpen && mobileActiveTab ? 'translate-x-0 opacity-100 scale-100 pointer-events-auto' : 'translate-x-12 opacity-0 scale-95 pointer-events-none'}` 
+          : `bottom-1 left-4 right-4 ${isMobilePanelOpen && mobileActiveTab ? 'translate-y-0 opacity-100 scale-100 pointer-events-auto' : 'translate-y-12 opacity-0 scale-95 pointer-events-none'}`
+      }`}>
+          <div ref={mobileOverlayRef} className="w-full h-full rounded-2xl p-2.5 flex flex-col gap-2.5 overflow-y-auto custom-scrollbar liquid-glass transition-all duration-500">
+              <div className="flex justify-between items-center border-b border-gray-100/30 dark:border-gray-800/30 pb-1.5 shrink-0">
+                  <h3 className="font-extrabold text-gray-750 dark:text-gray-200 uppercase text-[10px] tracking-wider leading-none">
+                      {mobileActiveTab === 'product' && 'Prenda y Color'}
+                      {mobileActiveTab === 'upload' && 'Tus Diseños'}
+                      {mobileActiveTab === 'adjust' && 'Ajustes'}
+                  </h3>
+                  <button onClick={() => setMobileActiveTab(null)} className="p-0.5 rounded-full text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 active:scale-95 transition-transform"><X className="w-4 h-4" /></button>
+              </div>
+
+              {mobileActiveTab === 'product' && (
+                  <div className="flex flex-col gap-2.5 shrink-0">
+                      <div className="flex p-0.5 bg-gray-100/60 dark:bg-gray-800/60 rounded-lg shrink-0 gap-1">
+                           <button 
+                               onClick={() => handleProductTypeChange('basica')} 
+                               className={`flex-1 py-1 text-[11px] font-bold rounded-md transition-all flex items-center justify-center gap-1 ${config.productType === 'basica' || (!config.productType || config.productType === 'tshirt') && config.tshirtModelIndex === 0 ? 'bg-white/90 dark:bg-gray-700/90 shadow text-pink-500' : 'text-gray-400'}`}
+                           >
+                               👕 Básica
+                           </button>
+                           <button 
+                               onClick={() => handleProductTypeChange('oversize')} 
+                               className={`flex-1 py-1 text-[11px] font-bold rounded-md transition-all flex items-center justify-center gap-1 ${config.productType === 'oversize' || (!config.productType || config.productType === 'tshirt') && config.tshirtModelIndex === 1 ? 'bg-white/90 dark:bg-gray-700/90 shadow text-pink-500' : 'text-gray-400'}`}
+                           >
+                               👕 Oversize
+                           </button>
+                           <button 
+                               onClick={() => handleProductTypeChange('totebag')} 
+                               className={`flex-1 py-1 text-[11px] font-bold rounded-md transition-all flex items-center justify-center gap-1 ${config.productType === 'totebag' ? 'bg-white/90 dark:bg-gray-700/90 shadow text-pink-500' : 'text-gray-400'}`}
+                           >
+                               👜 Tote Bag
+                           </button>
+                      </div>
+                      <div className="flex justify-center gap-3 py-1 shrink-0">
+                          {config.productType === 'totebag' ? (
+                               <div className="text-[10px] text-gray-500 font-bold px-3 py-1.5 bg-gray-100/40 dark:bg-gray-800/40 rounded-full">Color: Natural</div>
+                          ) : (
+                               <>
+                               <button onClick={() => handleColorChange('white')} className={`w-7 h-7 rounded-full border-2 transition-all ${config.color === 'white' ? 'border-pink-500 ring-2 ring-pink-200' : 'border-gray-200'} bg-white shadow-sm`} />
+                               <button onClick={() => handleColorChange('black')} className={`w-7 h-7 rounded-full border-2 transition-all ${config.color === 'black' ? 'border-pink-500 ring-2 ring-pink-200' : 'border-gray-600'} bg-black shadow-sm`} />
+                               </>
+                          )}
+                      </div>
+                  </div>
+              )}
+
+              {mobileActiveTab === 'upload' && (
+                  <div className="flex flex-col gap-2 shrink-0">
+                      <div className="grid grid-cols-2 gap-2 shrink-0">
+                          <div className={`border rounded-xl p-1 relative transition-all cursor-pointer ${activeLayerIndex === 0 && config.layers[0] ? 'border-pink-500 bg-pink-50/40 dark:bg-pink-900/10' : 'border-gray-200/50 dark:border-gray-700/50'}`} onClick={() => config.layers[0] && setActiveLayerIndex(0)}>
+                              <input type="file" ref={fileInputRef1} onChange={(e) => { handleFileUpload(e, 0); setMobileActiveTab('adjust'); }} accept="image/*" className="hidden" />
+                              {config.layers[0] ? (
+                                  <div className="flex flex-col items-center gap-1 py-0.5">
+                                      <img src={config.layers[0].textureUrl} className="w-7 h-7 object-contain bg-white rounded border border-gray-100" alt="Capa 1" />
+                                      <button onClick={(e) => { e.stopPropagation(); removeLayer(0); }} className="text-red-500 text-[8px] bg-red-50/60 dark:bg-red-950/20 px-1 py-0.5 rounded-full font-bold">Borrar</button>
+                                  </div>
+                              ) : (
+                                  <button onClick={() => fileInputRef1.current?.click()} className="w-full py-1 flex flex-col items-center text-gray-400 hover:text-pink-500"><Upload className="w-3.5 h-3.5" /><span className="text-[8px] font-bold mt-0.5">Subir #1</span></button>
+                              )}
+                          </div>
+                          <div className={`border rounded-xl p-1 relative transition-all cursor-pointer ${activeLayerIndex === 1 && config.layers[1] ? 'border-pink-500 bg-pink-50/40 dark:bg-pink-900/10' : 'border-gray-200/50 dark:border-gray-700/50'}`} onClick={() => config.layers[1] && setActiveLayerIndex(1)}>
+                              <input type="file" ref={fileInputRef2} onChange={(e) => { handleFileUpload(e, 1); setMobileActiveTab('adjust'); }} accept="image/*" className="hidden" />
+                              {config.layers[1] ? (
+                                  <div className="flex flex-col items-center gap-1 py-0.5">
+                                      <img src={config.layers[1].textureUrl} className="w-7 h-7 object-contain bg-white rounded border border-gray-100" alt="Capa 2" />
+                                      <button onClick={(e) => { e.stopPropagation(); removeLayer(1); }} className="text-red-500 text-[8px] bg-red-50/60 dark:bg-red-950/20 px-1 py-0.5 rounded-full font-bold">Borrar</button>
+                                  </div>
+                              ) : (
+                                  <button onClick={() => fileInputRef2.current?.click()} disabled={!config.layers[0]} className={`w-full py-1 flex flex-col items-center ${!config.layers[0] ? 'text-gray-300 opacity-50' : 'text-gray-400 hover:text-pink-500'}`}><Upload className="w-3.5 h-3.5" /><span className="text-[8px] font-bold mt-0.5">Subir #2</span></button>
+                              )}
+                          </div>
+                      </div>
+                      {activeLayer && (
+                           <button onClick={toggleLayerSide} className="w-full flex items-center justify-between px-2.5 py-1.5 bg-gray-50/30 dark:bg-gray-800/30 border border-gray-250/20 dark:border-gray-700/20 rounded-lg hover:border-pink-500 transition-colors shrink-0">
+                              <span className="text-[9px] font-extrabold uppercase text-gray-500 dark:text-gray-400">Ubicación:</span>
+                              <div className="flex items-center gap-1">
+                                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${activeLayer.side === 'front' || !activeLayer.side ? 'bg-pink-500 text-white' : 'text-gray-400'}`}>Frente</span>
+                                  <RefreshCw className="w-2.5 h-2.5 text-gray-400" />
+                                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${activeLayer.side === 'back' ? 'bg-pink-500 text-white' : 'text-gray-400'}`}>Espalda</span>
+                              </div>
+                           </button>
+                      )}
+                  </div>
+              )}
+
+               {mobileActiveTab === 'adjust' && activeLayer && (
+                   <div className="flex flex-col gap-2 shrink-0">
+                       <div className="space-y-0.5">
+                           <span className="text-[8px] font-extrabold text-gray-400 uppercase">TAMAÑO</span>
+                           <div className="flex items-center gap-2 bg-gray-50/40 dark:bg-gray-800/40 p-1 rounded-lg">
+                               <ZoomOut className="w-3.5 h-3.5 text-gray-500" />
+                               <input type="range" min={activeConstraints.scale.min} max={activeConstraints.scale.max} step="0.01" value={activeLayer.position.scale} onChange={(e) => setScaleValue(parseFloat(e.target.value))} className="w-full accent-pink-500 h-1 bg-gray-200 dark:bg-gray-750 rounded appearance-none cursor-pointer" />
+                               <ZoomIn className="w-3.5 h-3.5 text-gray-500" />
+                           </div>
+                       </div>
+                       {(config.productType === 'basica' || config.productType === 'oversize') && (
+                            <>
+                                <div className="space-y-0.5">
+                                    <span className="text-[8px] font-extrabold text-gray-400 uppercase">SECCIÓN</span>
+                                    <select
+                                        value={activeLayer.targetMesh || (config.productType === 'oversize' ? 'oversize_pecho' : 'basica_pecho')}
+                                        onChange={(e) => {
+                                             const val = e.target.value as any;
+                                             setConfig(prev => {
+                                                 const newLayers = [...prev.layers];
+                                                 let newScale = newLayers[activeLayerIndex].position.scale;
+                                                 let newX = newLayers[activeLayerIndex].position.x;
+                                                 let newY = newLayers[activeLayerIndex].position.y;
+                                                 
+                                                 if (val === 'basica_mangder' || val === 'oversize_mangder') {
+                                                     newScale = 0.340;
+                                                     newX = -0.020;
+                                                     newY = -0.110;
+                                                 } else if (val === 'basica_mangiz' || val === 'oversize_mangiz') {
+                                                     newScale = 0.340;
+                                                     newX = 0.007;
+                                                     newY = -0.448;
+                                                 } else if (val === 'basica_pecho' || val === 'oversize_pecho') {
+                                                     newScale = 1.200;
+                                                     newX = 0.000;
+                                                     newY = -0.100;
+                                                 } else if (val === 'basica_espalda' || val === 'oversize_espalda') {
+                                                     newScale = 1.200;
+                                                     newX = 0.100;
+                                                     newY = -0.100;
+                                                 }
+
+                                                 newLayers[activeLayerIndex] = {
+                                                     ...newLayers[activeLayerIndex],
+                                                     targetMesh: val,
+                                                     side: (val === 'basica_espalda' || val === 'oversize_espalda') ? 'back' : 'front',
+                                                     position: {
+                                                         ...newLayers[activeLayerIndex].position,
+                                                         scale: newScale,
+                                                         x: newX,
+                                                         y: newY
+                                                     }
+                                                 };
+                                                 return { ...prev, layers: newLayers };
+                                             });
+                                        }}
+                                        className="w-full text-[10px] font-bold p-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 focus:outline-none"
+                                    >
+                                        {config.productType === 'oversize' ? (
+                                            <>
+                                                <option value="oversize_pecho">Pecho / Frente</option>
+                                                <option value="oversize_espalda">Espalda</option>
+                                                <option value="oversize_mangiz">Manga Izquierda</option>
+                                                <option value="oversize_mangder">Manga Derecha</option>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <option value="basica_pecho">Pecho / Frente</option>
+                                                <option value="basica_espalda">Espalda</option>
+                                                <option value="basica_mangiz">Manga Izquierda</option>
+                                                <option value="basica_mangder">Manga Derecha</option>
+                                            </>
+                                        )}
+                                    </select>
+                                </div>
+                                <div className="space-y-0.5">
+                                    <span className="text-[8px] font-extrabold text-gray-400 uppercase">ROTACIÓN ({activeLayer.rotation || 0}°)</span>
+                                    <div className="flex items-center gap-2 bg-gray-50/40 dark:bg-gray-800/40 p-1 rounded-lg">
+                                        <RotateCcw className="w-3.5 h-3.5 text-gray-500" />
+                                        <input 
+                                            type="range" 
+                                            min="0" 
+                                            max="360" 
+                                            step="1" 
+                                            value={activeLayer.rotation || 0} 
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value, 10);
+                                                setConfig(prev => {
+                                                    const newLayers = [...prev.layers];
+                                                    newLayers[activeLayerIndex] = {
+                                                        ...newLayers[activeLayerIndex],
+                                                        rotation: val
+                                                    };
+                                                    return { ...prev, layers: newLayers };
+                                                });
+                                            }} 
+                                            className="w-full accent-pink-500 h-1 bg-gray-200 dark:bg-gray-750 rounded appearance-none cursor-pointer" 
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                       <div className="space-y-0.5">
+                           <span className="text-[8px] font-extrabold text-gray-400 uppercase">TRANSPARENCIA ({Math.round((config.designOpacity ?? appearance.designOpacity) * 100)}%)</span>
+                           <div className="flex items-center gap-2 bg-gray-50/40 dark:bg-gray-800/40 p-1 rounded-lg">
+                               <span className="text-[8px] font-extrabold text-gray-400 uppercase flex items-center gap-1"><Hand className="w-3.5 h-3.5" /></span>
+                               <input type="range" min="0.1" max="1" step="0.01" value={config.designOpacity ?? appearance.designOpacity} onChange={(e) => setConfig(prev => ({ ...prev, designOpacity: parseFloat(e.target.value) }))} className="w-full accent-pink-500 h-1 bg-gray-200 dark:bg-gray-750 rounded appearance-none cursor-pointer" />
+                           </div>
+                       </div>
+                   </div>
+               )}
+
+              {mobileActiveTab === 'adjust' && !activeLayer && (
+                  <p className="text-[10px] font-bold text-yellow-650 dark:text-yellow-400 text-center py-2 shrink-0">⚠️ Selecciona una imagen primero en "Diseño".</p>
+              )}
+>>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
           </div>
 
           {mobileActiveTab === 'product' && (
@@ -989,6 +1232,236 @@ export const Customizer: React.FC<CustomizerProps> = ({ config, setConfig, onChe
                     <button onClick={() => handleColorChange('black')} className={`w-7 h-7 rounded-full border-2 transition-all ${config.color === 'black' ? 'border-pink-500 ring-2 ring-pink-200' : 'border-gray-600'} bg-black shadow-sm`} />
                   </>
                 )}
+<<<<<<< HEAD
+=======
+            </div>
+
+            <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-lg shrink-0 mt-2 mb-1 gap-1">
+            <button
+                onClick={() => handleProductTypeChange('basica')}
+                className={`flex-1 py-1.5 text-xs lg:text-sm font-bold rounded-md transition-all flex items-center justify-center gap-1.5 ${config.productType === 'basica' || (!config.productType || config.productType === 'tshirt') && config.tshirtModelIndex === 0 ? 'bg-white dark:bg-gray-700 shadow text-pink-500' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+            >
+                <Shirt className="w-3.5 h-3.5" />
+                Básica
+            </button>
+            <button
+                onClick={() => handleProductTypeChange('oversize')}
+                className={`flex-1 py-1.5 text-xs lg:text-sm font-bold rounded-md transition-all flex items-center justify-center gap-1.5 ${config.productType === 'oversize' || (!config.productType || config.productType === 'tshirt') && config.tshirtModelIndex === 1 ? 'bg-white dark:bg-gray-700 shadow text-pink-500' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+            >
+                <Shirt className="w-3.5 h-3.5" />
+                Oversize
+            </button>
+            <button
+                onClick={() => handleProductTypeChange('totebag')}
+                className={`flex-1 py-1.5 text-xs lg:text-sm font-bold rounded-md transition-all flex items-center justify-center gap-1.5 ${config.productType === 'totebag' ? 'bg-white dark:bg-gray-700 shadow text-pink-500' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+            >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                Tote Bag
+            </button>
+        </div>
+
+        <div className="space-y-2 lg:space-y-3">
+            <div className="flex justify-between items-center">
+                <label className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-2">
+                    <Layers className="w-4 h-4" /> Capas (Máx 2)
+                </label>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+                <div 
+                    className={`border-2 rounded-xl p-2 relative transition-all cursor-pointer ${activeLayerIndex === 0 && config.layers[0] ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-gray-200 dark:border-gray-700'}`}
+                    onClick={() => config.layers[0] && setActiveLayerIndex(0)}
+                >
+                    <input type="file" ref={fileInputRef1} onChange={(e) => handleFileUpload(e, 0)} accept="image/*" className="hidden" />
+                    {config.layers[0] ? (
+                        <div className="flex flex-col items-center gap-1">
+                            <img src={config.layers[0].textureUrl} className="w-12 h-12 lg:w-16 lg:h-16 object-contain bg-white rounded border border-gray-200" alt="Capa 1" />
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] lg:text-xs font-bold">Diseño 1</span>
+                                <button onClick={(e) => { e.stopPropagation(); removeLayer(0); }} className="text-red-500 hover:text-red-700 p-1 bg-white dark:bg-gray-800 rounded-full shadow-sm"><Trash2 className="w-3 h-3" /></button>
+                            </div>
+                        </div>
+                    ) : (
+                        <button onClick={() => fileInputRef1.current?.click()} className="w-full h-20 lg:h-24 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-pink-500">
+                            <Upload className="w-5 h-5 lg:w-6 lg:h-6" />
+                            <span className="text-[10px] lg:text-xs font-bold">Subir #1</span>
+                        </button>
+                    )}
+                </div>
+
+                <div 
+                    className={`border-2 rounded-xl p-2 relative transition-all cursor-pointer ${activeLayerIndex === 1 && config.layers[1] ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-gray-200 dark:border-gray-700'}`}
+                    onClick={() => config.layers[1] && setActiveLayerIndex(1)}
+                >
+                    <input type="file" ref={fileInputRef2} onChange={(e) => handleFileUpload(e, 1)} accept="image/*" className="hidden" />
+                    {config.layers[1] ? (
+                        <div className="flex flex-col items-center gap-1">
+                            <img src={config.layers[1].textureUrl} className="w-12 h-12 lg:w-16 lg:h-16 object-contain bg-white rounded border border-gray-200" alt="Capa 2" />
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] lg:text-xs font-bold">Diseño 2</span>
+                                <button onClick={(e) => { e.stopPropagation(); removeLayer(1); }} className="text-red-500 hover:text-red-700 p-1 bg-white dark:bg-gray-800 rounded-full shadow-sm"><Trash2 className="w-3 h-3" /></button>
+                            </div>
+                        </div>
+                    ) : (
+                        <button 
+                            onClick={() => fileInputRef2.current?.click()} 
+                            disabled={!config.layers[0]}
+                            className={`w-full h-20 lg:h-24 flex flex-col items-center justify-center gap-2 ${!config.layers[0] ? 'opacity-50 cursor-not-allowed text-gray-300' : 'text-gray-400 hover:text-pink-500'}`}
+                        >
+                            <Upload className="w-5 h-5 lg:w-6 lg:h-6" />
+                            <span className="text-[10px] lg:text-xs font-bold">Subir #2</span>
+                        </button>
+                    )}
+                </div>
+            </div>
+            
+            {activeLayer && (
+                <div className="mt-2 space-y-2">
+                     {(config.productType === 'basica' || config.productType === 'oversize') && (
+                         <div className="space-y-1 animate-fade-in text-left">
+                           <label className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400 flex items-center gap-2 tracking-wide">
+                             <Shirt className="w-3.5 h-3.5 text-pink-500" /> Sección de la Prenda
+                           </label>
+                           <select
+                             value={activeLayer.targetMesh || (config.productType === 'oversize' ? 'oversize_pecho' : 'basica_pecho')}
+                             onChange={(e) => {
+                               const val = e.target.value as any;
+                               setConfig(prev => {
+                                 const newLayers = [...prev.layers];
+                                 let newScale = newLayers[activeLayerIndex].position.scale;
+                                 let newX = newLayers[activeLayerIndex].position.x;
+                                 let newY = newLayers[activeLayerIndex].position.y;
+                                 
+                                 if (val === 'basica_mangder' || val === 'oversize_mangder') {
+                                   newScale = 0.340;
+                                   newX = -0.020;
+                                   newY = -0.110;
+                                 } else if (val === 'basica_mangiz' || val === 'oversize_mangiz') {
+                                   newScale = 0.340;
+                                   newX = 0.007;
+                                   newY = -0.448;
+                                 } else if (val === 'basica_pecho' || val === 'oversize_pecho') {
+                                   newScale = 1.200;
+                                   newX = 0.000;
+                                   newY = -0.100;
+                                 } else if (val === 'basica_espalda' || val === 'oversize_espalda') {
+                                   newScale = 1.200;
+                                   newX = 0.100;
+                                   newY = -0.100;
+                                 }
+
+                                 newLayers[activeLayerIndex] = {
+                                   ...newLayers[activeLayerIndex],
+                                   targetMesh: val,
+                                   side: (val === 'basica_espalda' || val === 'oversize_espalda') ? 'back' : 'front',
+                                   position: {
+                                     ...newLayers[activeLayerIndex].position,
+                                     scale: newScale,
+                                     x: newX,
+                                     y: newY
+                                   }
+                                 };
+                                 return { ...prev, layers: newLayers };
+                               });
+                             }}
+                             className="w-full text-xs font-semibold p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-pink-500 shadow-sm"
+                           >
+                             {config.productType === 'oversize' ? (
+                               <>
+                                 <option value="oversize_pecho">Pecho / Frente</option>
+                                 <option value="oversize_espalda">Espalda</option>
+                                 <option value="oversize_mangiz">Manga Izquierda</option>
+                                 <option value="oversize_mangder">Manga Derecha</option>
+                               </>
+                             ) : (
+                               <>
+                                 <option value="basica_pecho">Pecho / Frente</option>
+                                 <option value="basica_espalda">Espalda</option>
+                                 <option value="basica_mangiz">Manga Izquierda</option>
+                                 <option value="basica_mangder">Manga Derecha</option>
+                               </>
+                             )}
+                           </select>
+                         </div>
+                      )}
+                     
+                     <div className="flex gap-2">
+                         <button
+                            onClick={swapLayersData}
+                            title="Intercambiar diseño entre ranura 1 y 2"
+                            className="w-full py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-pink-500 hover:text-pink-600 dark:hover:border-pink-500 transition-colors group flex items-center justify-center gap-2 shadow-sm text-xs font-bold text-gray-600 dark:text-gray-300"
+                         >
+                            <ArrowLeftRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-pink-500 transition-colors" />
+                            <span>Intercambiar Ranuras (1 y 2)</span>
+                         </button>
+                     </div>
+                </div>
+            )}
+            
+            {config.layers.length > 0 && !activeLayer && (
+                <div className="text-xs text-center text-gray-400 italic">
+                    Toca un diseño para editar
+                </div>
+            )}
+        </div>
+
+        {activeLayer && (
+          <div className="space-y-4 lg:space-y-6 animate-fade-in border-t border-gray-100 dark:border-gray-800 pt-2 lg:pt-4">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2 uppercase tracking-wide">
+                  <Move className="w-4 h-4" /> Mover (#{activeLayerIndex + 1})
+                </label>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => setIsViewLocked(!isViewLocked)}
+                        className={`text-[10px] font-bold flex items-center gap-1 px-2 py-1 rounded transition-colors ${isViewLocked ? 'bg-pink-100 text-pink-600 dark:bg-pink-900/30' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'}`}
+                    >
+                        {isViewLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                        {isViewLocked ? 'Desbloquear' : 'Bloquear para Mover'}
+                    </button>
+                    <button 
+                    onClick={centerImage}
+                    className="text-[10px] text-pink-500 hover:text-pink-600 font-bold flex items-center gap-1 bg-pink-50 dark:bg-pink-900/10 px-2 py-1 rounded"
+                    >
+                    <RotateCcw className="w-3 h-3" /> CENTRAR
+                    </button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-1 w-28 mx-auto">
+                <div />
+                <button 
+                  onClick={() => adjustPosition('y', 0.05)}
+                  className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/30 text-gray-600 dark:text-gray-300 hover:text-pink-600 active:scale-95 transition-transform"
+                >
+                  <ArrowUp className="w-4 h-4 mx-auto" />
+                </button>
+                <div />
+                <button 
+                  onClick={() => adjustPosition('x', -0.05)}
+                  className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/30 text-gray-600 dark:text-gray-300 hover:text-pink-600 active:scale-95 transition-transform"
+                >
+                  <ArrowLeft className="w-4 h-4 mx-auto" />
+                </button>
+                <div className="flex items-center justify-center">
+                    <LayoutTemplate className="w-4 h-4 text-gray-400" />
+                </div>
+                <button 
+                  onClick={() => adjustPosition('x', 0.05)}
+                  className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/30 text-gray-600 dark:text-gray-300 hover:text-pink-600 active:scale-95 transition-transform"
+                >
+                  <ArrowRight className="w-4 h-4 mx-auto" />
+                </button>
+                <div />
+                <button 
+                  onClick={() => adjustPosition('y', -0.05)}
+                  className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/30 text-gray-600 dark:text-gray-300 hover:text-pink-600 active:scale-95 transition-transform"
+                >
+                  <ArrowDown className="w-4 h-4 mx-auto" />
+                </button>
+                <div />
+>>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
               </div>
             </div>
           )}

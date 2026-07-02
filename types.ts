@@ -14,8 +14,11 @@ export interface DesignLayer {
   opacity?: number;
   rotation?: number; // New rotation in degrees (0-360)
   targetMesh?: 'basica_pecho' | 'basica_espalda' | 'basica_mangiz' | 'basica_mangder' | 'oversize_pecho' | 'oversize_espalda' | 'oversize_mangiz' | 'oversize_mangder'; // Target submesh for basica/oversize
+<<<<<<< HEAD
   imageWidth?: number; // Original image width in pixels (for DEV HUD)
   imageHeight?: number; // Original image height in pixels (for DEV HUD)
+=======
+>>>>>>> 604436f51403413a97fd6b793c1c66751e6a00fb
   filters?: {
     brightness: number;
     contrast: number;
