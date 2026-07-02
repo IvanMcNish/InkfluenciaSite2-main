@@ -625,10 +625,12 @@ const OversizeLayerItem: React.FC<{
 
   const uniformScaleFactor = uvBounds.width / physicalBounds.width;
   const finalScaleX = scaleX * uniformScaleFactor;
-  const finalScaleY = scaleY * uniformScaleFactor;
+  // Negate Y to flip the image upright (oversize UVs are V-flipped relative to the ortho camera)
+  const finalScaleY = -(scaleY * uniformScaleFactor);
 
   const offsetX = layer.position?.x || 0;
-  const offsetY = layer.position?.y || 0;
+  // Negate Y offset so that moving "up" in the UI moves the image up in the canvas
+  const offsetY = -(layer.position?.y || 0);
   const rotDeg = layer.rotation || 0;
   const rotationRad = rotDeg * (Math.PI / 180);
 
@@ -723,6 +725,12 @@ const OversizeSubmeshWithTexture: React.FC<{
 
   const normalScaleVec = useMemo(() => new THREE.Vector2(0.95, 0.95), []);
 
+  const dummyTexture = useMemo(() => {
+    const t = new THREE.Texture();
+    t.flipY = false;
+    return t;
+  }, []);
+
   return (
     <Mesh
       geometry={meshData.geometry}
@@ -737,9 +745,21 @@ const OversizeSubmeshWithTexture: React.FC<{
         normalScale={normalScaleVec}
         roughness={0.9}
         metalness={0.0}
+        map={dummyTexture}
+        map-flipY={false}
       >
         <RenderTexture attach="map" width={2048} height={2048}>
           <color attach="background" args={[materialColor]} />
+          <OrthographicCamera
+            makeDefault
+            left={-0.5}
+            right={0.5}
+            top={0.5}
+            bottom={-0.5}
+            near={0.1}
+            far={10}
+            position={[0, 0, 5]}
+          />
           <ambientLight intensity={1.5} />
           <directionalLight position={[0, 0, 5]} intensity={1.0} />
           {matchingLayers.map((layer) => (

@@ -13,7 +13,9 @@ export interface DesignLayer {
   side: TShirtSide;
   opacity?: number;
   rotation?: number; // New rotation in degrees (0-360)
-  targetMesh?: 'basica_pecho' | 'basica_espalda' | 'basica_mangiz' | 'basica_mangder'; // Target submesh for basica
+  targetMesh?: 'basica_pecho' | 'basica_espalda' | 'basica_mangiz' | 'basica_mangder' | 'oversize_pecho' | 'oversize_espalda' | 'oversize_mangiz' | 'oversize_mangder'; // Target submesh for basica/oversize
+  imageWidth?: number; // Original image width in pixels (for DEV HUD)
+  imageHeight?: number; // Original image height in pixels (for DEV HUD)
   filters?: {
     brightness: number;
     contrast: number;
