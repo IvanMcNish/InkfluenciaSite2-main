@@ -1330,6 +1330,11 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
         const geo = m.geometry.clone();
         geo.applyMatrix4(m.matrixWorld);
 
+        // Strip vertex colors for oversize model to avoid gray tinting / matching basic color perfectly
+        if (config.productType === 'oversize' && geo.attributes.color) {
+          geo.deleteAttribute('color');
+        }
+
         // Corrective rotation for tshirt-2.glb (it is rotated 90 deg sideways on Y axis)
         if (objUrl.toLowerCase().includes('tshirt-2') || objUrl.toLowerCase().includes('tshirt_2')) {
           geo.rotateY(-Math.PI / 2);
