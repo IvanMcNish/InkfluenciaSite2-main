@@ -659,10 +659,9 @@ const OversizeSubmeshWithTexture: React.FC<{
   matchingLayers: DesignLayer[];
   materialColor: string;
   normalMap: THREE.Texture;
-  aoMap: THREE.Texture;
   onPointerMove: (e: any) => void;
   onPointerDown?: (e: any) => void;
-}> = ({ meshData, matchingLayers, materialColor, normalMap, aoMap, onPointerMove, onPointerDown }) => {
+}> = ({ meshData, matchingLayers, materialColor, normalMap, onPointerMove, onPointerDown }) => {
   const renderer = useThree(state => state.gl);
 
   const uvBounds = useMemo(() => {
@@ -747,8 +746,6 @@ const OversizeSubmeshWithTexture: React.FC<{
         normalScale={normalScaleVec}
         roughness={0.9}
         metalness={0.0}
-        aoMap={aoMap}
-        aoMapIntensity={1.0}
         map={dummyTexture}
         map-flipY={false}
       >
@@ -785,10 +782,9 @@ const OversizeSubmeshPlain: React.FC<{
   meshData: any;
   materialColor: string;
   normalMap: THREE.Texture | null;
-  aoMap: THREE.Texture | null;
   onPointerMove: (e: any) => void;
   onPointerDown?: (e: any) => void;
-}> = ({ meshData, materialColor, normalMap, aoMap, onPointerMove, onPointerDown }) => {
+}> = ({ meshData, materialColor, normalMap, onPointerMove, onPointerDown }) => {
   const normalScaleVec = useMemo(() => new THREE.Vector2(0.95, 0.95), []);
 
   return (
@@ -805,8 +801,6 @@ const OversizeSubmeshPlain: React.FC<{
         normalScale={normalScaleVec}
         roughness={0.9}
         metalness={0.0}
-        aoMap={aoMap}
-        aoMapIntensity={1.0}
       />
     </Mesh>
   );
@@ -817,10 +811,9 @@ const OversizeSubmesh: React.FC<{
   matchingLayers: DesignLayer[];
   materialColor: string;
   normalMap: THREE.Texture;
-  aoMap: THREE.Texture;
   onPointerMove: (e: any) => void;
   onPointerDown?: (e: any) => void;
-}> = ({ meshData, matchingLayers, materialColor, normalMap, aoMap, onPointerMove, onPointerDown }) => {
+}> = ({ meshData, matchingLayers, materialColor, normalMap, onPointerMove, onPointerDown }) => {
   if (matchingLayers && matchingLayers.length > 0) {
     return (
       <OversizeSubmeshWithTexture
@@ -828,7 +821,6 @@ const OversizeSubmesh: React.FC<{
         matchingLayers={matchingLayers}
         materialColor={materialColor}
         normalMap={normalMap}
-        aoMap={aoMap}
         onPointerMove={onPointerMove}
         onPointerDown={onPointerDown}
       />
@@ -840,7 +832,6 @@ const OversizeSubmesh: React.FC<{
       meshData={meshData}
       materialColor={materialColor}
       normalMap={normalMap}
-      aoMap={aoMap}
       onPointerMove={onPointerMove}
       onPointerDown={onPointerDown}
     />
@@ -1323,48 +1314,6 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
     }
   }, [normalMap]);
 
-  // Load oversize fabric normal map texture (1 to 1 mold, clamp wrapping)
-  const oversizeNormalMap = useTexture('/normaldetailsv2.jpg');
-  useEffect(() => {
-    if (oversizeNormalMap) {
-      oversizeNormalMap.wrapS = THREE.ClampToEdgeWrapping;
-      oversizeNormalMap.wrapT = THREE.ClampToEdgeWrapping;
-      oversizeNormalMap.repeat.set(1, 1);
-      oversizeNormalMap.flipY = false; // Flip vertically to match the inverted UV coordinates of the oversize model
-      oversizeNormalMap.anisotropy = 16;
-      oversizeNormalMap.generateMipmaps = true;
-      oversizeNormalMap.needsUpdate = true;
-    }
-  }, [oversizeNormalMap]);
-
-  // Load oversize fabric external AO map (1 to 1 mold, clamp wrapping, flipY = false)
-  const aoOutsideMap = useTexture('/ao_tshirt_outside.jpg');
-  useEffect(() => {
-    if (aoOutsideMap) {
-      aoOutsideMap.wrapS = THREE.ClampToEdgeWrapping;
-      aoOutsideMap.wrapT = THREE.ClampToEdgeWrapping;
-      aoOutsideMap.repeat.set(1, 1);
-      aoOutsideMap.flipY = false;
-      aoOutsideMap.anisotropy = 16;
-      aoOutsideMap.generateMipmaps = true;
-      aoOutsideMap.needsUpdate = true;
-    }
-  }, [aoOutsideMap]);
-
-  // Load oversize fabric internal AO map (1 to 1 mold, clamp wrapping, flipY = false)
-  const aoInsideMap = useTexture('/ao_tshirt_inside.jpg');
-  useEffect(() => {
-    if (aoInsideMap) {
-      aoInsideMap.wrapS = THREE.ClampToEdgeWrapping;
-      aoInsideMap.wrapT = THREE.ClampToEdgeWrapping;
-      aoInsideMap.repeat.set(1, 1);
-      aoInsideMap.flipY = false;
-      aoInsideMap.anisotropy = 16;
-      aoInsideMap.generateMipmaps = true;
-      aoInsideMap.needsUpdate = true;
-    }
-  }, [aoInsideMap]);
-
   const { meshes, zFront, zBack } = useMemo(() => {
     scene.updateMatrixWorld(true);
 
@@ -1381,11 +1330,6 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
 
         const geo = m.geometry.clone();
         geo.applyMatrix4(m.matrixWorld);
-
-        // Copy uv to uv2 for correct aoMap mapping in Three.js
-        if (geo.attributes.uv && !geo.attributes.uv2) {
-          geo.setAttribute('uv2', geo.attributes.uv.clone());
-        }
 
         // Corrective rotation for tshirt-2.glb (it is rotated 90 deg sideways on Y axis)
         if (objUrl.toLowerCase().includes('tshirt-2') || objUrl.toLowerCase().includes('tshirt_2')) {
@@ -1407,12 +1351,6 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
           const m = child as THREE.Mesh;
           const geo = m.geometry.clone();
           geo.applyMatrix4(m.matrixWorld);
-
-          // Copy uv to uv2 for correct aoMap mapping in Three.js
-          if (geo.attributes.uv && !geo.attributes.uv2) {
-            geo.setAttribute('uv2', geo.attributes.uv.clone());
-          }
-
           tempMeshes.push({
             name: m.name || '',
             geo,
@@ -1578,8 +1516,7 @@ const TShirtMesh: React.FC<ProductMeshProps> = ({ config, showMeasurements, cust
               meshData={meshData}
               matchingLayers={matchingLayers}
               materialColor={materialColor}
-              normalMap={oversizeNormalMap}
-              aoMap={meshNameLower === 'oversize_cuello' ? aoInsideMap : aoOutsideMap}
+              normalMap={normalMap}
               onPointerMove={handlePointerMove}
               onPointerDown={handlePointerDown}
             />
